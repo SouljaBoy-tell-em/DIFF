@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -15,6 +16,13 @@ enum graph_dump_commands {
 
 	HEAD,
 	FIRSTLY
+};
+
+
+enum Type {
+
+	OP,
+	NUM
 };
 
 
@@ -40,10 +48,15 @@ const char * ORANGE = "orange";
 
 typedef struct node {
 
-	char            data;
 	struct node * parent;
 	struct node *   left;
 	struct node *  right;
+	enum   Type     type;
+	union {
+
+		char            op;
+		int   		number;
+	};
 } Node;
 
 typedef struct {
@@ -97,7 +110,7 @@ int graphDump (Node * head) {
 	fprintf (graphDumpFile, "}");
 	fseek (graphDumpFile, STARTLETTERGRAPHDUMP, SEEK_SET);
 	fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-			 head, ORANGE, head->data);	
+			 head, ORANGE, head->op);	
 
 	fclose (graphDumpFile);
 
@@ -111,21 +124,41 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandG
 
 		if (( * commandGraphDump) != HEAD) {
 
-			if (( * commandGraphDump) == FIRSTLY)
+			if (currentNode->type == OP) {
+
+				if (( * commandGraphDump) == FIRSTLY)
 				fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-				currentNode, ORANGE, (currentNode->parent)->data);
+				currentNode, ORANGE, (currentNode->parent)->op);
 
-			if ((currentNode->parent)->left == currentNode)
-				fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",
-				currentNode, 			  GREEN,           currentNode->data);
+				if ((currentNode->parent)->left == currentNode)
+					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",
+					currentNode, 			  GREEN,           currentNode->op);
 
-			if ((currentNode->parent)->right == currentNode)
-				fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-				currentNode, 				RED,    	   currentNode->data);
+				if ((currentNode->parent)->right == currentNode)
+					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
+					currentNode, 				RED,    	   currentNode->op);
 
-			fprintf (graphDumpFile, "block%p -> block%p\n",
-				currentNode->parent, 				   currentNode);
+				fprintf (graphDumpFile, "block%p -> block%p\n",
+					currentNode->parent, 				   currentNode);
+			}
 
+			if (currentNode->type == NUM) {
+
+				if (( * commandGraphDump) == FIRSTLY)
+					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%d\"];\n",  
+					currentNode, ORANGE, (currentNode->parent)->number);
+
+				if ((currentNode->parent)->left == currentNode)
+					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%d\"];\n",
+					currentNode, 			  GREEN,           currentNode->number);
+
+				if ((currentNode->parent)->right == currentNode)
+					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%d\"];\n",  
+					currentNode, 				RED,    	   currentNode->number);
+
+				fprintf (graphDumpFile, "block%p -> block%p\n",
+					currentNode->parent, 				   currentNode);
+			}
 		}
 
 		( * commandGraphDump)++                                                ;
@@ -137,9 +170,25 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandG
 
 int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode) {
 
-	char buffer = '\0';
-	fscanf (dumpFile, "%c", &buffer);
-	( * currentNode)->data = buffer;
+	char charBuffer = '\0';
+	int intBuffer   =   0 ;
+	fscanf (dumpFile, "%c", &charBuffer);
+
+	if (!isdigit (charBuffer)) {
+
+		( * currentNode)->type = OP;
+		( * currentNode)->op = charBuffer;
+		return ERROR_OFF;
+	}
+
+	else {
+
+		ungetc (charBuffer, dumpFile);
+		fscanf (dumpFile, "%d", &intBuffer);
+		( * currentNode)->type   = NUM;
+		( * currentNode)->number = intBuffer;
+	}
+
 
 	return ERROR_OFF;
 }
