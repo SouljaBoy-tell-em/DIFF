@@ -98,8 +98,8 @@ void print (FILE * dumpFile, Node * node);
 
 int main (void) {
 
-	FILE * dumpFile = fopen ("equation.txt", "r");
 	FILE * graphDumpFile = fopen ("graphDump.txt", "a");
+	FILE * dumpFile = fopen ("equation.txt", "r");
 	Tree tree = {};
 	InitializeNode (&(tree.head), dumpFile, NULL);
 	//graphDump (tree.head);
@@ -216,7 +216,6 @@ Node * CopyUnderTheTree (Node * node) {
 		node->right = CopyUnderTheTree (node->right);
 
 	Node * currentNode = (Node * ) malloc (sizeof (Node));
-	currentNode->type = node->type;
 
 	if (node->type == NUM) {
 
@@ -227,6 +226,12 @@ Node * CopyUnderTheTree (Node * node) {
 	if (node->type == OP) {
 
 		currentNode->type = 	  OP;
+		currentNode->op   = node->op;
+	}
+
+	if (node->type == VAR) {
+
+		currentNode->type =      VAR;
 		currentNode->op   = node->op;
 	}
 
@@ -481,10 +486,12 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
 	switch (node->type) {
 
 		case NUM:
+			printf ("%d", node->num);
 			fprintf (dumpFile, "%d", node->num);
 			break;
 
 		case VAR:
+			printf ("%c", node->op);
 			fprintf (dumpFile, "%c", node->op);
 			break;
 
@@ -520,8 +527,6 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             		break;
 
             	default:
-            		printf ("So operation not found.\n");
-            		exit (EXIT_FAILURE);
             		break;
 			}
 
