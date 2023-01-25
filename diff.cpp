@@ -32,7 +32,8 @@ enum TypeVar {
 	ADD = '+',
 	SUB = '-',
 	MUL = '*',
-	DIV = '/'
+	DIV = '/',
+	DEG = '^'
 };
 
 
@@ -89,7 +90,10 @@ void GraphNodeOpSub (FILE * dumpFile, Node * node);
 void GraphTreePrint (FILE * dumpFile, Node * node);
 int InitializeNode (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode);
 Node * nodeAdd (Type type, Node * node, Node currentNode, Node * left, Node * right);
+Node * Ln (Node * node, FILE * dumpFile);
 Node * NodeOpAdd (Node * left, Node * right);
+Node * NodeOpDegree (Node * left, Node * right);
+Node * NodeOpDiv (Node * left, Node * right);
 Node * NodeOpSub (Node * left, Node * right);
 Node * NodeOpMul (Node * left, Node * right);
 Node * num (int num);
@@ -407,6 +411,35 @@ Node * diff (FILE * dumpFile, Node * node) {
 						// NodeOpAdd (NodeOpMul (dL, cR), NodeOpMul (cL, dR));
 					break;
 
+				case DEG:
+					if ((node->left)->type == NUM) {
+
+						if ((node->right)->type == NUM)
+							return num (0);
+
+						else
+							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), Ln (node->left, dumpFile)), 
+																				  			   diff (dumpFile,node->right));
+					}
+
+					else if ((node->right)->type == NUM) {
+
+						Node * currentNode = node->right;
+						(currentNode->num)--;
+						return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, currentNode), CopyUnderTheTree (node->right)), 
+																							 diff (dumpFile,    node->left));
+					}
+
+					else
+						return NodeOpMul (NodeOpDegree (node->left, node->right), diff (dumpFile, NodeOpMul (node->right, Ln (node->left, dumpFile))));
+
+					break;
+
+				case DIV:
+					return NodeOpSub (NodeOpDiv (diff (dumpFile, node->left), CopyUnderTheTree (node->right)),
+									  NodeOpDiv (CopyUnderTheTree (node->left), diff (dumpFile, node->left)));
+						// NodeOpSub (NopeOpDiv (dL, cR), NodeOpMul (cL, dR));
+					break;
 				default:
 					printf ("So operation not found. Symb: %c\n", node->op);
 					exit (EXIT_FAILURE);
@@ -424,8 +457,8 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 Node * NodeOpAdd (Node * left, Node * right) {
 
-	Node currentNode = {};
-	currentNode.op = ADD;
+	Node currentNode =  {};
+	currentNode.op   = ADD;
 
 	return nodeAdd (OP, NULL, currentNode, left, right);
 }
@@ -433,8 +466,8 @@ Node * NodeOpAdd (Node * left, Node * right) {
 
 Node * NodeOpSub (Node * left, Node * right) {
 
-	Node currentNode = {};
-	currentNode.op = SUB;
+	Node currentNode =  {};
+	currentNode.op   = SUB;
 
 	return nodeAdd (OP, NULL, currentNode, left, right);
 }
@@ -442,11 +475,40 @@ Node * NodeOpSub (Node * left, Node * right) {
 
 Node * NodeOpMul (Node * left, Node * right) {
 
-	Node currentNode = {};
-	currentNode.op = MUL;
+	Node currentNode =  {};
+	currentNode.op   = MUL;
 
 	return nodeAdd (OP, NULL, currentNode, CopyUnderTheTree (left), 
 										   CopyUnderTheTree (right));
+}
+
+
+Node * NodeOpDiv (Node * left, Node * right) {
+
+	Node currentNode =  {};
+	currentNode.op   = DIV;
+
+	return nodeAdd (OP, NULL, currentNode, CopyUnderTheTree (left), 
+										   CopyUnderTheTree (right));
+}
+
+
+Node * NodeOpDegree (Node * left, Node * right) {
+
+	Node currentNode =  {};
+	currentNode.op   = DEG;
+
+	return nodeAdd (OP, NULL, currentNode, CopyUnderTheTree (left), 
+										   CopyUnderTheTree (right));
+}
+
+
+Node * Ln (Node * node, FILE * dumpFile) {
+
+	Node currentNode = {};
+	currentNode = * NodeOpDiv (diff (dumpFile, node->right), CopyUnderTheTree (node->right));
+
+	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
 }
 
 
@@ -524,6 +586,29 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             		fprintf (dumpFile, "\\cdot ");
             		if (node->right)
             			GraphTreePrint (dumpFile, node->right);
+            		break;
+
+            	case DIV:
+            		fprintf (dumpFile, "\\frac{");
+           		 	if (node->left) 
+           		 		GraphTreePrint (dumpFile, node -> left);
+            		fprintf (dumpFile, "}{");
+            		if (node->right) 
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, "}");
+            		break;
+
+            	case DEG:
+            		if (node->left) {
+               	 		fprintf (dumpFile, " \\left( ");
+                		GraphTreePrint (dumpFile, node->left);
+                		fprintf (dumpFile, " \\right) ");
+            		}
+            		fprintf (dumpFile, "%c", node->op);
+            		fprintf (dumpFile, "{");
+            		if (node->right) 
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf(dumpFile, "}");
             		break;
 
             	default:
