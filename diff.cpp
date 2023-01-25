@@ -78,19 +78,22 @@ typedef struct {
 
 void checkIn (FILE * dumpFile);
 int constructor (Node ** currentNode, Node * parentCurrentNode);
+Node * CopyUnderTheTree (Node * node);
 Node * diff (FILE * dumpFile, Node * node);
 void GraphDiffNode (FILE * dumpFile, Node * node);
 void diffNode(FILE * dumpFile, Node * node);
 int graphDump (Node * head);
 void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandGraphDump);
+void GraphNodeOpAdd (FILE * dumpFile, Node * node);
+void GraphNodeOpSub (FILE * dumpFile, Node * node);
 void GraphTreePrint (FILE * dumpFile, Node * node);
 int InitializeNode (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode);
 Node * nodeAdd (Type type, Node * node, Node currentNode, Node * left, Node * right);
+Node * NodeOpAdd (Node * left, Node * right);
+Node * NodeOpSub (Node * left, Node * right);
+Node * NodeOpMul (Node * left, Node * right);
 Node * num (int num);
 void print (FILE * dumpFile, Node * node);
-
-
-Node * NodeOpAdd (Node * left, Node * right);
 
 
 int main (void) {
@@ -103,22 +106,6 @@ int main (void) {
 	print (graphDumpFile, tree.head);
 
 	return 0;
-}
-
-
-int constructor (Node ** currentNode, Node * parentCurrentNode) {
-
-	* currentNode = (Node * )          malloc   							  (sizeof (Node));
-	CHECK_ERROR(!( * currentNode), 		   "Problem with allocating memory for currentNode.");
-
-	//( * currentNode)->data = (char * ) malloc 				    (MAXLENTITLE * sizeof (char));
-	//CHECK_ERROR(!( * currentNode), "Problem with allocating memory for currentNode->data.\n");
-
-	( * currentNode)->right  =               NULL;
-	( * currentNode)->left   =               NULL;
-	( * currentNode)->parent =  parentCurrentNode;
-
-	return ERROR_OFF;
 }
 
 
@@ -180,8 +167,24 @@ void checkIn (FILE * dumpFile) {
 \\author{Зайцев Александр}																		 \n\
 \\begin{document}																				 \n\
 \\maketitle																						 \n");
-    
+
     fprintf (dumpFile, "\\section{}\n");
+}
+
+
+int constructor (Node ** currentNode, Node * parentCurrentNode) {
+
+	* currentNode = (Node * )          malloc   							  (sizeof (Node));
+	CHECK_ERROR(!( * currentNode), 		   "Problem with allocating memory for currentNode.");
+
+	//( * currentNode)->data = (char * ) malloc 				    (MAXLENTITLE * sizeof (char));
+	//CHECK_ERROR(!( * currentNode), "Problem with allocating memory for currentNode->data.\n");
+
+	( * currentNode)->right  =               NULL;
+	( * currentNode)->left   =               NULL;
+	( * currentNode)->parent =  parentCurrentNode;
+
+	return ERROR_OFF;
 }
 
 
@@ -201,6 +204,45 @@ int graphDump (Node * head) {
 	fclose (graphDumpFile);
 
 	return ERROR_OFF;
+}
+
+
+Node * CopyUnderTheTree (Node * node) {
+
+	if (node->left)
+		node->left = CopyUnderTheTree (node->left);
+
+	if (node->right)
+		node->right = CopyUnderTheTree (node->right);
+
+	Node * currentNode = (Node * ) malloc (sizeof (Node));
+	currentNode->type = node->type;
+
+	if (node->type == NUM) {
+
+		currentNode->type = 	  NUM;
+		currentNode->num  = node->num;
+	}
+
+	if (node->type == OP) {
+
+		currentNode->type = 	  OP;
+		currentNode->op   = node->op;
+	}
+
+	if (node->left)
+		currentNode->left = (Node * ) malloc (sizeof (Node));
+
+	if (node->right)
+		currentNode->right = (Node * ) malloc (sizeof (Node));
+
+	if (node->left)
+		* (currentNode->left) = * (node->left);
+
+	if (node->right)
+		* (currentNode->right) = * (node->right);
+
+	return currentNode;
 }
 
 
@@ -346,6 +388,18 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 				case ADD:
 					return NodeOpAdd (diff (dumpFile, node->left), diff (dumpFile, node->right)); 
+						// NodeOpAdd (dL, dR);
+					break;
+
+				case SUB:
+					return NodeOpSub (diff (dumpFile, node->left), diff (dumpFile, node->right));
+						// NodeOpSub (dL, dR);
+					break;
+
+				case MUL:
+					return NodeOpAdd (NodeOpMul (diff (dumpFile, node->left), CopyUnderTheTree (node->right)), 
+									  NodeOpMul (CopyUnderTheTree (node->left), diff (dumpFile, node->right)));
+						// NodeOpAdd (NodeOpMul (dL, cR), NodeOpMul (cL, dR));
 					break;
 
 				default:
@@ -372,6 +426,25 @@ Node * NodeOpAdd (Node * left, Node * right) {
 }
 
 
+Node * NodeOpSub (Node * left, Node * right) {
+
+	Node currentNode = {};
+	currentNode.op = SUB;
+
+	return nodeAdd (OP, NULL, currentNode, left, right);
+}
+
+
+Node * NodeOpMul (Node * left, Node * right) {
+
+	Node currentNode = {};
+	currentNode.op = MUL;
+
+	return nodeAdd (OP, NULL, currentNode, CopyUnderTheTree (left), 
+										   CopyUnderTheTree (right));
+}
+
+
 void GraphNodeOpAdd(FILE * dumpFile, Node * node) {
 
     fprintf (dumpFile, "$$ ");
@@ -381,6 +454,17 @@ void GraphNodeOpAdd(FILE * dumpFile, Node * node) {
     fprintf (dumpFile, " + ");
     GraphDiffNode (dumpFile, node->right);
     fprintf (dumpFile, "$$\n \\newline");
+}
+
+void GraphNodeOpSub (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	GraphDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	GraphDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " - ");
+	GraphDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, "$$\n \\newline");
 }
 
 
@@ -417,6 +501,24 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             		fprintf (dumpFile, "\\right)");
             		break;
 
+            	case SUB:
+            		fprintf (dumpFile, "\\left(");
+            		if (node->left) 
+            			GraphTreePrint (dumpFile, node->left);
+            		fprintf (dumpFile, "%c", node->op);
+            		if (node->right) 
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, "\\right)");
+            		break;
+
+            	case MUL:
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		fprintf (dumpFile, "\\cdot ");
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		break;
+
             	default:
             		printf ("So operation not found.\n");
             		exit (EXIT_FAILURE);
@@ -450,7 +552,6 @@ Node * num (int num) {
 }
 
 
-
 void print (FILE * dumpFile, Node * node) {
 
 	Node * nodeDiff = NULL;
@@ -458,11 +559,9 @@ void print (FILE * dumpFile, Node * node) {
 	checkIn (dumpFile);
 	nodeDiff = diff (dumpFile, node);
 
-	fprintf (dumpFile, " Итого: \n \\newline ");
+	fprintf (dumpFile, " TOTAL: \n \\newline ");
     fprintf (dumpFile, " $$ ");
     GraphTreePrint (dumpFile, nodeDiff);
     fprintf (dumpFile, " $$ ");
     fprintf (dumpFile, "\\end{document}\n");
 }
-
-
