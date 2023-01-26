@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 
 enum error_code {
@@ -33,7 +34,8 @@ enum TypeVar {
 	SUB = '-',
 	MUL = '*',
 	DIV = '/',
-	DEG = '^'
+	DEG = '^',
+	LN  = 'L'
 };
 
 
@@ -323,10 +325,17 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandG
 }
 
 
-int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode) {
+int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode) {	//---> TO DO: minus degree don't work ! 
 
 	char opBuffer   = '\0';
-	int intBuffer   =   0 ;
+	int intBuffer   =   0;
+	bool 
+
+	if (fscanf (dumpFile, "%d", &opBuffer) == 1) {
+
+
+	}
+
 	fscanf (dumpFile, "%c", &opBuffer);
 
 	if (strchr ("*/+-^", opBuffer)) {
@@ -419,13 +428,15 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 						else
 							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), Ln (node->left, dumpFile)), 
-																				  			   diff (dumpFile,node->right));
+																				  			  diff (dumpFile, node->right));
 					}
 
 					else if ((node->right)->type == NUM) {
 
-						Node * currentNode = node->right;
-						(currentNode->num)--;
+						Node * currentNode = (Node * ) malloc (sizeof (Node));
+						currentNode->type = NUM;
+						currentNode->num = (node->right)->num - 1;
+
 						return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, currentNode), CopyUnderTheTree (node->right)), 
 																							 diff (dumpFile,    node->left));
 					}
@@ -440,6 +451,7 @@ Node * diff (FILE * dumpFile, Node * node) {
 									  NodeOpDiv (CopyUnderTheTree (node->left), diff (dumpFile, node->left)));
 						// NodeOpSub (NopeOpDiv (dL, cR), NodeOpMul (cL, dR));
 					break;
+
 				default:
 					printf ("So operation not found. Symb: %c\n", node->op);
 					exit (EXIT_FAILURE);
@@ -506,7 +518,7 @@ Node * NodeOpDegree (Node * left, Node * right) {
 Node * Ln (Node * node, FILE * dumpFile) {
 
 	Node currentNode = {};
-	currentNode = * NodeOpDiv (diff (dumpFile, node->right), CopyUnderTheTree (node->right));
+	currentNode.op   = LN;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
 }
@@ -591,7 +603,7 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             	case DIV:
             		fprintf (dumpFile, "\\frac{");
            		 	if (node->left) 
-           		 		GraphTreePrint (dumpFile, node -> left);
+           		 		GraphTreePrint (dumpFile, node->left);
             		fprintf (dumpFile, "}{");
             		if (node->right) 
             			GraphTreePrint (dumpFile, node->right);
@@ -609,6 +621,15 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             		if (node->right) 
             			GraphTreePrint (dumpFile, node->right);
             		fprintf(dumpFile, "}");
+            		break;
+
+            	case LN:
+            		fprintf (dumpFile, "ln(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
             		break;
 
             	default:
