@@ -427,10 +427,12 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 						if ((node->right)->type == NUM)
 							return num (0);
+							// (const) ^ const;
 
 						else
 							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), Ln (node->left, dumpFile)), 
 																				  			  diff (dumpFile, node->right));
+							// (const) ^ f(x); NodeOpMul (NodeOpMul (NodeOpDegree (left, right), Ln (left)), dR));
 					}
 
 					else if ((node->right)->type == NUM) {
@@ -441,17 +443,20 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 						return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, currentNode), CopyUnderTheTree (node->right)), 
 																							 diff (dumpFile,    node->left));
+						// (f(x)) ^ const; NodeOpMul (NodeOpMul (NodeOpDegree (left), cR), dL);
 					}
 
 					else
-						return NodeOpMul (NodeOpDegree (node->left, node->right), diff (dumpFile, NodeOpMul (node->right, Ln (node->left, dumpFile))));
-
+						return NodeOpMul (NodeOpDegree (node->left, node->right), diff (dumpFile, NodeOpMul (node->right, 
+																							Ln (node->left, dumpFile))));
+						// (f(x)) ^ g(x); NodeOpMul (NodeOpDegree (left, right), d (NodeOpMul (right, ln (left))));
 					break;
 
 				case DIV:
-					return NodeOpSub (NodeOpDiv (diff (dumpFile, node->left), CopyUnderTheTree (node->right)),
-									  NodeOpDiv (CopyUnderTheTree (node->left), diff (dumpFile, node->left)));
-						// NodeOpSub (NopeOpDiv (dL, cR), NodeOpMul (cL, dR));
+					return NodeOpDiv (NodeOpSub (NodeOpMul (diff (dumpFile, node->left), CopyUnderTheTree (node->right)), 
+						   NodeOpMul 					  (CopyUnderTheTree (node->left), diff (dumpFile, node->right))), 
+						   NodeOpDegree 									  (CopyUnderTheTree (node->right), num (2)));
+						// (f(x)/g(x))' = (f'(x)g(x) - f(x)g'(x))/g(x)^2;
 					break;
 
 				default:
