@@ -328,33 +328,35 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandG
 int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode) {	//---> TO DO: minus degree don't work ! 
 
 	char opBuffer   = '\0';
-	int intBuffer   =   0;
-	bool 
+	int intBuffer   =   0, pointerFilePlaceStart = ftell (dumpFile), pointerFilePlaceFinish = 0;
+	bool isNumber = false;
 
-	if (fscanf (dumpFile, "%d", &opBuffer) == 1) {
+	if (fscanf (dumpFile, "%d", &intBuffer) == 1)
+		isNumber = true;
 
-
-	}
-
+	pointerFilePlaceFinish = ftell (dumpFile);
+	fseek (dumpFile, pointerFilePlaceStart - pointerFilePlaceFinish, SEEK_CUR);
 	fscanf (dumpFile, "%c", &opBuffer);
 
-	if (strchr ("*/+-^", opBuffer)) {
+	if (strchr ("*/+-^", opBuffer) && !isNumber) {
 
 		( * currentNode)->type = OP;
 		( * currentNode)->op = opBuffer;
 		return ERROR_OFF;
 	}
 
-	if (opBuffer == 'x') {
+	if (opBuffer == 'x' && !isNumber) {
 
 		( * currentNode)->type =       VAR;
 		( * currentNode)->op   =  opBuffer;
 		return ERROR_OFF;
 	}
 
-	else {
+	fseek (dumpFile, -1, SEEK_CUR);
 
-		ungetc (opBuffer, dumpFile);
+	if (isNumber) {
+
+		//ungetc (opBuffer, dumpFile);
 		fscanf (dumpFile, "%d", &intBuffer);
 		( * currentNode)->type   = NUM;
 		( * currentNode)->num = intBuffer;
