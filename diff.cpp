@@ -53,7 +53,8 @@ const char * RED = "red";
 const char * ORANGE = "orange";
 
 
-#define SINLENFUNCTION		  3
+#define EXP     		   2.71
+#define LENFUNCTION           5
 #define MAXLENTITLE 		100
 #define STARTLETTERGRAPHDUMP 23
 
@@ -375,7 +376,7 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 	pointerFilePlaceFinish = ftell (dumpFile);
 	fseek (dumpFile, pointerFilePlaceStart - pointerFilePlaceFinish, SEEK_CUR);
-	char funcCommandBuffer [SINLENFUNCTION] = "\0";
+	char funcCommandBuffer [LENFUNCTION] = "\0";
 	fgets (funcCommandBuffer, 4, dumpFile);
 	printf ("command: %s\n", funcCommandBuffer);
 
@@ -413,6 +414,13 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 		( * currentNode)->type =  OP;
 		( * currentNode)->num  = CTG;
+		return ERROR_OFF;
+	}
+
+	if (!strcmp (funcCommandBuffer, "exp")) {
+
+		( * currentNode)->type   =  OP;
+		( * currentNode)->dbl    = EXP;
 		return ERROR_OFF;
 	}
 
@@ -533,17 +541,18 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 				case TG: 
 					return NodeOpDiv (NodeOpSub 
-									 (NodeOpMul (diff (dumpFile, NodeOpSin (node->right)), CopyUnderTheTree (NodeOpCos (node->right ))), 
-									  NodeOpMul (CopyUnderTheTree (NodeOpSin (node->right)), diff (dumpFile, NodeOpCos (node->right)))),
-									 NodeOpDegree (CopyUnderTheTree (NodeOpCos (node->right)), num (2)));
+									 (NodeOpMul    (diff (dumpFile,   NodeOpSin (node->right)), CopyUnderTheTree (NodeOpCos (node->right ))), 
+									  NodeOpMul    (CopyUnderTheTree (NodeOpSin (node->right)), diff (dumpFile,   NodeOpCos (node->right)))),
+									  NodeOpDegree (CopyUnderTheTree (NodeOpCos (node->right)), num  								   (2)));
 					break;
 
 				case CTG:
 					return NodeOpDiv (NodeOpSub 
-									 (NodeOpMul (diff (dumpFile, NodeOpCos (node->right)), CopyUnderTheTree (NodeOpSin (node->right ))), 
-									  NodeOpMul (CopyUnderTheTree (NodeOpCos (node->right)), diff (dumpFile, NodeOpSin (node->right)))),
-									 NodeOpDegree (CopyUnderTheTree (NodeOpSin (node->right)), num (2)));
+									 (NodeOpMul    (diff (dumpFile,   NodeOpCos (node->right)), CopyUnderTheTree (NodeOpSin (node->right ))), 
+									  NodeOpMul    (CopyUnderTheTree (NodeOpCos (node->right)), diff (dumpFile,   NodeOpSin (node->right)))),
+									  NodeOpDegree (CopyUnderTheTree (NodeOpSin (node->right)), num                                    (2)));
 					break;
+
 
 				default: 
 					printf ("So operation not found. Num command: %d\n", node->num);
