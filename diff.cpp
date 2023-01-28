@@ -520,6 +520,12 @@ Node * diff (FILE * dumpFile, Node * node) {
 					return NodeOpMul (NodeOpMul (NodeOpSin (node->right), num (-1)), diff (dumpFile, node->right));
 					break;
 
+				case TG: 
+					return NodeOpDiv (NodeOpSub 
+									 (NodeOpMul (diff (dumpFile, NodeOpSin (node->right)), CopyUnderTheTree (NodeOpCos (node->right ))), 
+									  NodeOpMul (CopyUnderTheTree (NodeOpSin (node->right)), diff (dumpFile, NodeOpCos (node->right)))),
+									 NodeOpDegree (CopyUnderTheTree (NodeOpCos (node->right)), num (2)));
+
 				default: 
 					printf ("So operation not found. Num command: %d\n", node->num);
 					exit (EXIT_FAILURE);
