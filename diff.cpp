@@ -384,18 +384,21 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
 		( * currentNode)->num  = LN;
+		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "sin")) {
 
 		( * currentNode)->type =  OP;
 		( * currentNode)->num  = SIN;
+		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "cos")) {
 
 		( * currentNode)->type =  OP;
 		( * currentNode)->num  = COS;
+		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "tg(")) {
@@ -403,6 +406,14 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
 		( * currentNode)->num  = TG;
+		return ERROR_OFF;
+	}
+
+	if (!strcmp (funcCommandBuffer, "ctg")) {
+
+		( * currentNode)->type =  OP;
+		( * currentNode)->num  = CTG;
+		return ERROR_OFF;
 	}
 
 	return ERROR_OFF;
@@ -525,6 +536,14 @@ Node * diff (FILE * dumpFile, Node * node) {
 									 (NodeOpMul (diff (dumpFile, NodeOpSin (node->right)), CopyUnderTheTree (NodeOpCos (node->right ))), 
 									  NodeOpMul (CopyUnderTheTree (NodeOpSin (node->right)), diff (dumpFile, NodeOpCos (node->right)))),
 									 NodeOpDegree (CopyUnderTheTree (NodeOpCos (node->right)), num (2)));
+					break;
+
+				case CTG:
+					return NodeOpDiv (NodeOpSub 
+									 (NodeOpMul (diff (dumpFile, NodeOpCos (node->right)), CopyUnderTheTree (NodeOpSin (node->right ))), 
+									  NodeOpMul (CopyUnderTheTree (NodeOpCos (node->right)), diff (dumpFile, NodeOpSin (node->right)))),
+									 NodeOpDegree (CopyUnderTheTree (NodeOpSin (node->right)), num (2)));
+					break;
 
 				default: 
 					printf ("So operation not found. Num command: %d\n", node->num);
