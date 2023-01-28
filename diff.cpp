@@ -35,7 +35,16 @@ enum TypeVar {
 	MUL = '*',
 	DIV = '/',
 	DEG = '^',
-	LN  = 'L'
+};
+
+
+enum functions {
+
+	LN,
+	SIN,
+	COS,
+	TG,
+	CTG
 };
 
 
@@ -44,6 +53,7 @@ const char * RED = "red";
 const char * ORANGE = "orange";
 
 
+#define SINLENFUNCTION		  3
 #define MAXLENTITLE 		100
 #define STARTLETTERGRAPHDUMP 23
 
@@ -94,10 +104,11 @@ int InitializeNode (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 Node * nodeAdd (Type type, Node * node, Node currentNode, Node * left, Node * right);
 Node * Ln (Node * node, FILE * dumpFile);
 Node * NodeOpAdd (Node * left, Node * right);
+Node * NodeOpCos (Node * right);
 Node * NodeOpDegree (Node * left, Node * right);
 Node * NodeOpDiv (Node * left, Node * right);
-Node * NodeOpSub (Node * left, Node * right);
 Node * NodeOpMul (Node * left, Node * right);
+Node * NodeOpSub (Node * left, Node * right);
 Node * num (int num);
 void print (FILE * dumpFile, Node * node);
 
@@ -170,7 +181,6 @@ void checkIn (FILE * dumpFile) {
 \\usepackage{gensymb}																			 \n\
 																								 \n\
 \\title{Взятие производной}																		 \n\
-\\author{Зайцев Александр}																		 \n\
 \\begin{document}																				 \n\
 \\maketitle																						 \n");
 
@@ -223,7 +233,7 @@ Node * CopyUnderTheTree (Node * node) {
 
 	Node * currentNode = (Node * ) malloc (sizeof (Node));
 
-	if (node->type == NUM) {
+	if (node->type == NUM) {	// TO DO: currentNode = node;
 
 		currentNode->type = 	  NUM;
 		currentNode->num  = node->num;
@@ -325,14 +335,23 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandG
 }
 
 
-int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode) {	//---> TO DO: minus degree don't work ! 
+int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode) {
 
-	char opBuffer   = '\0';
-	int intBuffer   =   0, pointerFilePlaceStart = ftell (dumpFile), pointerFilePlaceFinish = 0;
-	bool isNumber = false;
+	char opBuffer   		                 =             '\0';
+	int  intBuffer                           =               0 , 
+		 pointerFilePlaceStart               = ftell (dumpFile), 
+		 pointerFilePlaceFinish              =               0 ;
+	bool isNumber                            =            false;
 
 	if (fscanf (dumpFile, "%d", &intBuffer) == 1)
 		isNumber = true;
+
+	if (isNumber) {
+
+		( * currentNode)->type =       NUM;
+		( * currentNode)->num  = intBuffer;
+		return ERROR_OFF;
+	}
 
 	pointerFilePlaceFinish = ftell (dumpFile);
 	fseek (dumpFile, pointerFilePlaceStart - pointerFilePlaceFinish, SEEK_CUR);
@@ -352,14 +371,37 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 		return ERROR_OFF;
 	}
 
-	fseek (dumpFile, -1, SEEK_CUR);
 
-	if (isNumber) {
+	pointerFilePlaceFinish = ftell (dumpFile);
+	fseek (dumpFile, pointerFilePlaceStart - pointerFilePlaceFinish, SEEK_CUR);
+	char funcCommandBuffer [SINLENFUNCTION] = "\0";
+	fgets (funcCommandBuffer, 4, dumpFile);
+	printf ("command: %s\n", funcCommandBuffer);
 
-		//ungetc (opBuffer, dumpFile);
-		fscanf (dumpFile, "%d", &intBuffer);
-		( * currentNode)->type   = NUM;
-		( * currentNode)->num = intBuffer;
+	if (!strcmp (funcCommandBuffer, "ln(")) {
+
+		ungetc ('(', dumpFile);
+		( * currentNode)->type =  OP;
+		( * currentNode)->num  =  LN;
+	}
+
+	if (!strcmp (funcCommandBuffer, "sin")) {
+
+		( * currentNode)->type =    OP;
+		( * currentNode)->op   =   SIN;
+	}
+
+	if (!strcmp (funcCommandBuffer, "cos")) {
+
+		( * currentNode)->type =    OP;
+		( * currentNode)->op   =   'c';
+	}
+
+	if (!strcmp (funcCommandBuffer, "tg(")) {
+
+		ungetc ('(', dumpFile);
+		( * currentNode)->type =    OP;
+		( * currentNode)->op   =   't';
 	}
 
 	return ERROR_OFF;
@@ -460,9 +502,24 @@ Node * diff (FILE * dumpFile, Node * node) {
 					break;
 
 				default:
-					printf ("So operation not found. Symb: %c\n", node->op);
+					break;
+			}
+
+			switch (node->num) {
+
+				case LN:
+					return NodeOpDiv (diff (dumpFile, node->right), CopyUnderTheTree (node->right));
+					break;
+
+				case SIN:
+					return NodeOpMul (NodeOpCos (node->right), diff (dumpFile, node->right));
+					break;
+
+				default: 
+					printf ("So operation not found. Num command: %d\n", node->num);
 					exit (EXIT_FAILURE);
 					break;
+
 			}
 
 		default:
@@ -519,6 +576,15 @@ Node * NodeOpDegree (Node * left, Node * right) {
 
 	return nodeAdd (OP, NULL, currentNode, CopyUnderTheTree (left), 
 										   CopyUnderTheTree (right));
+}
+
+
+Node * NodeOpCos (Node * right) {
+
+	Node currentNode =  {};
+	currentNode.num  = COS;
+
+	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
 }
 
 
@@ -632,6 +698,24 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
 
             	case LN:
             		fprintf (dumpFile, "ln(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
+            		break;
+
+            	case SIN:
+            		fprintf (dumpFile, "sin(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
+            		break;
+
+            	case COS:
+            		fprintf (dumpFile, "cos(");
             		if (node->left)
             			GraphTreePrint (dumpFile, node->left);
             		if (node->right)
