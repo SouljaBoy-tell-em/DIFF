@@ -109,6 +109,7 @@ Node * NodeOpDegree (Node * left, Node * right);
 Node * NodeOpDiv (Node * left, Node * right);
 Node * NodeOpMul (Node * left, Node * right);
 Node * NodeOpSub (Node * left, Node * right);
+Node * NodeOpSin (Node * right);
 Node * num (int num);
 void print (FILE * dumpFile, Node * node);
 
@@ -381,27 +382,27 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 	if (!strcmp (funcCommandBuffer, "ln(")) {
 
 		ungetc ('(', dumpFile);
-		( * currentNode)->type =  OP;
-		( * currentNode)->num  =  LN;
+		( * currentNode)->type = OP;
+		( * currentNode)->num  = LN;
 	}
 
 	if (!strcmp (funcCommandBuffer, "sin")) {
 
-		( * currentNode)->type =    OP;
-		( * currentNode)->op   =   SIN;
+		( * currentNode)->type =  OP;
+		( * currentNode)->num  = SIN;
 	}
 
 	if (!strcmp (funcCommandBuffer, "cos")) {
 
-		( * currentNode)->type =    OP;
-		( * currentNode)->op   =   'c';
+		( * currentNode)->type =  OP;
+		( * currentNode)->num  = COS;
 	}
 
 	if (!strcmp (funcCommandBuffer, "tg(")) {
 
 		ungetc ('(', dumpFile);
-		( * currentNode)->type =    OP;
-		( * currentNode)->op   =   't';
+		( * currentNode)->type = OP;
+		( * currentNode)->num  = TG;
 	}
 
 	return ERROR_OFF;
@@ -515,6 +516,10 @@ Node * diff (FILE * dumpFile, Node * node) {
 					return NodeOpMul (NodeOpCos (node->right), diff (dumpFile, node->right));
 					break;
 
+				case COS: 
+					return NodeOpMul (NodeOpMul (NodeOpSin (node->right), num (-1)), diff (dumpFile, node->right));
+					break;
+
 				default: 
 					printf ("So operation not found. Num command: %d\n", node->num);
 					exit (EXIT_FAILURE);
@@ -583,6 +588,15 @@ Node * NodeOpCos (Node * right) {
 
 	Node currentNode =  {};
 	currentNode.num  = COS;
+
+	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
+}
+
+
+Node * NodeOpSin (Node * right) { 
+
+	Node currentNode = {};
+	currentNode.num = SIN;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
 }
