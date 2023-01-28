@@ -44,7 +44,11 @@ enum functions {
 	SIN,
 	COS,
 	TG,
-	CTG
+	CTG,
+	SH,
+	CH,
+	TH,
+	CTH
 };
 
 
@@ -103,7 +107,6 @@ void GraphNodeOpSub (FILE * dumpFile, Node * node);
 void GraphTreePrint (FILE * dumpFile, Node * node);
 int InitializeNode (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode);
 Node * nodeAdd (Type type, Node * node, Node currentNode, Node * left, Node * right);
-Node * Ln (Node * node, FILE * dumpFile);
 Node * NodeOpAdd (Node * left, Node * right);
 Node * NodeOpCos (Node * right);
 Node * NodeOpDegree (Node * left, Node * right);
@@ -111,6 +114,9 @@ Node * NodeOpDiv (Node * left, Node * right);
 Node * NodeOpMul (Node * left, Node * right);
 Node * NodeOpSub (Node * left, Node * right);
 Node * NodeOpSin (Node * right);
+Node * NodeOpSh (Node * right);
+Node * NodeOpCh (Node * right);
+Node * Ln (Node * node, FILE * dumpFile);
 Node * num (int num);
 void print (FILE * dumpFile, Node * node);
 
@@ -424,6 +430,34 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 		return ERROR_OFF;
 	}
 
+	if (!strcmp (funcCommandBuffer, "sh(")) {
+
+		ungetc ('(', dumpFile);
+		( * currentNode)->type = OP;
+		( * currentNode)->num  = SH;
+		return ERROR_OFF;
+	}
+
+	if (!strcmp (funcCommandBuffer, "ch(")) {
+
+		ungetc ('(', dumpFile);
+		( * currentNode)->type = OP;
+		( * currentNode)->num  = CH;
+	}
+
+	if (!strcmp (funcCommandBuffer, "th(")) {
+
+		ungetc ('(', dumpFile);
+		( * currentNode)->type = OP;
+		( * currentNode)->num  = TH;
+	}
+
+	if (!strcmp (funcCommandBuffer, "cth")) {
+
+		( * currentNode)->type =  OP;
+		( * currentNode)->num  = CTH;
+	}
+
 	return ERROR_OFF;
 }
 
@@ -553,6 +587,27 @@ Node * diff (FILE * dumpFile, Node * node) {
 									  NodeOpDegree (CopyUnderTheTree (NodeOpSin (node->right)), num                                    (2)));
 					break;
 
+				case SH:
+					return NodeOpMul (NodeOpCh (node->right), diff (dumpFile, node->right));
+					break;
+
+				case CH:
+					return NodeOpMul (NodeOpSh (node->right), diff (dumpFile, node->right));
+					break;
+
+				case TH:
+					return NodeOpDiv (NodeOpSub 
+									 (NodeOpMul    (diff (dumpFile,   NodeOpSh (node->right)), CopyUnderTheTree (NodeOpCh (node->right ))), 
+									  NodeOpMul    (CopyUnderTheTree (NodeOpSh (node->right)), diff (dumpFile,   NodeOpCh (node->right)))),
+									  NodeOpDegree (CopyUnderTheTree (NodeOpCh (node->right)), num  								 (2)));
+					break;
+
+				case CTH:
+					return NodeOpDiv (NodeOpSub 
+									 (NodeOpMul    (diff (dumpFile,   NodeOpCh (node->right)), CopyUnderTheTree (NodeOpSh (node->right ))), 
+									  NodeOpMul    (CopyUnderTheTree (NodeOpCh (node->right)), diff (dumpFile,   NodeOpSh (node->right)))),
+									  NodeOpDegree (CopyUnderTheTree (NodeOpSh (node->right)), num  								 (2)));
+
 
 				default: 
 					printf ("So operation not found. Num command: %d\n", node->num);
@@ -631,6 +686,24 @@ Node * NodeOpSin (Node * right) {
 
 	Node currentNode = {};
 	currentNode.num = SIN;
+
+	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
+}
+
+
+Node * NodeOpSh (Node * right) {
+
+	Node currentNode = {};
+	currentNode.num  = SH;
+
+	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
+}
+
+
+Node * NodeOpCh (Node * right) {
+
+	Node currentNode = {};
+	currentNode.num  = CH;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
 }
@@ -764,6 +837,42 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
 
             	case COS:
             		fprintf (dumpFile, "cos(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
+            		break;
+
+            	case SH:
+            		fprintf (dumpFile, "sh(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
+            		break;
+
+            	case CH:
+            		fprintf (dumpFile, "ch(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
+            		break;
+
+            	case TH:
+            		fprintf (dumpFile, "th(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
+            		break;
+
+            	case CTH:
+            		fprintf (dumpFile, "cth(");
             		if (node->left)
             			GraphTreePrint (dumpFile, node->left);
             		if (node->right)
