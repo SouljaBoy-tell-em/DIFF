@@ -34,22 +34,7 @@ enum TypeVar {
 	SUB = '-',
 	MUL = '*',
 	DIV = '/',
-	DEG = '^',
-};
-
-
-enum functions {
-
-	LOG,
-	LN,
-	SIN,
-	COS,
-	TG,
-	CTG,
-	SH,
-	CH,
-	TH,
-	CTH
+	DEG = '^'
 };
 
 
@@ -71,6 +56,17 @@ const char * ORANGE = "orange";
                    return ERROR_ON;                       \
                }                                          \
             } while(false)
+
+
+#define FUNCTIONS(name, num, amountSigns, ...) \
+    FUNC_##name = num,
+
+enum func {
+
+	#include "diffFunctions.h"
+};
+
+#undef FUNCTIONS
 
 
 typedef struct node {
@@ -124,7 +120,7 @@ void print (FILE * dumpFile, Node * node);
 
 int main (void) {
 
-	FILE * graphDumpFile = fopen ("graphDump.txt", "a");
+	FILE * graphDumpFile = fopen ("graphDump.txt", "w");
 	FILE * dumpFile = fopen ("equation.txt", "r");
 	Tree tree = {};
 	InitializeNode (&(tree.head), dumpFile, NULL);
@@ -390,7 +386,7 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 	if (!strcmp (funcCommandBuffer, "log")) {
 
 		( * currentNode)->type =  OP;
-		( * currentNode)->num  = LOG;
+		( * currentNode)->num  = FUNC_log;
 		return ERROR_OFF;
 	}
 
@@ -398,21 +394,21 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
-		( * currentNode)->num  = LN;
+		( * currentNode)->num  = FUNC_ln;
 		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "sin")) {
 
 		( * currentNode)->type =  OP;
-		( * currentNode)->num  = SIN;
+		( * currentNode)->num  = FUNC_sin;
 		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "cos")) {
 
 		( * currentNode)->type =  OP;
-		( * currentNode)->num  = COS;
+		( * currentNode)->num  = FUNC_cos;
 		return ERROR_OFF;
 	}
 
@@ -420,14 +416,14 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
-		( * currentNode)->num  = TG;
+		( * currentNode)->num  = FUNC_tg;
 		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "ctg")) {
 
 		( * currentNode)->type =  OP;
-		( * currentNode)->num  = CTG;
+		( * currentNode)->num  = FUNC_ctg;
 		return ERROR_OFF;
 	}
 
@@ -442,7 +438,7 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
-		( * currentNode)->num  = SH;
+		( * currentNode)->num  = FUNC_sh;
 		return ERROR_OFF;
 	}
 
@@ -450,7 +446,7 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
-		( * currentNode)->num  = CH;
+		( * currentNode)->num  = FUNC_ch;
 		return ERROR_OFF;
 	}
 
@@ -458,14 +454,14 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
-		( * currentNode)->num  = TH;
+		( * currentNode)->num  = FUNC_th;
 		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "cth")) {
 
 		( * currentNode)->type =  OP;
-		( * currentNode)->num  = CTH;
+		( * currentNode)->num  = FUNC_cth;
 		return ERROR_OFF;
 	}
 
@@ -576,65 +572,21 @@ Node * diff (FILE * dumpFile, Node * node) {
 					break;
 			}
 
+
+			#define FUNCTIONS(name, num, amountSigns, ...) \
+				case num:								   \
+					__VA_ARGS__							   \
+					break;	
+
 			switch (node->num) {
 
-				case LOG:
-					return NodeOpDiv (diff (dumpFile, node->right), NodeOpMul (node->right, (Ln (num (10)))));
-					break;
+				#include "diffFunctions.h"
+				#undef FUNCTIONS
 
-				case LN:
-					return NodeOpDiv (diff (dumpFile, node->right), CopyUnderTheTree (node->right));
-					break;
-
-				case SIN:
-					return NodeOpMul (NodeOpCos (node->right), diff (dumpFile, node->right));
-					break;
-
-				case COS: 
-					return NodeOpMul (NodeOpMul (NodeOpSin (node->right), num (-1)), diff (dumpFile, node->right));
-					break;
-
-				case TG: 
-					return NodeOpDiv (NodeOpSub 
-									 (NodeOpMul    (diff (dumpFile,   NodeOpSin (node->right)), CopyUnderTheTree (NodeOpCos (node->right ))), 
-									  NodeOpMul    (CopyUnderTheTree (NodeOpSin (node->right)), diff (dumpFile,   NodeOpCos (node->right)))),
-									  NodeOpDegree (CopyUnderTheTree (NodeOpCos (node->right)), num  								   (2)));
-					break;
-
-				case CTG:
-					return NodeOpDiv (NodeOpSub 
-									 (NodeOpMul    (diff (dumpFile,   NodeOpCos (node->right)), CopyUnderTheTree (NodeOpSin (node->right ))), 
-									  NodeOpMul    (CopyUnderTheTree (NodeOpCos (node->right)), diff (dumpFile,   NodeOpSin (node->right)))),
-									  NodeOpDegree (CopyUnderTheTree (NodeOpSin (node->right)), num                                    (2)));
-					break;
-
-				case SH:
-					return NodeOpMul (NodeOpCh (node->right), diff (dumpFile, node->right));
-					break;
-
-				case CH:
-					return NodeOpMul (NodeOpSh (node->right), diff (dumpFile, node->right));
-					break;
-
-				case TH:
-					return NodeOpDiv (NodeOpSub 
-									 (NodeOpMul    (diff (dumpFile,   NodeOpSh (node->right)), CopyUnderTheTree (NodeOpCh (node->right ))), 
-									  NodeOpMul    (CopyUnderTheTree (NodeOpSh (node->right)), diff (dumpFile,   NodeOpCh (node->right)))),
-									  NodeOpDegree (CopyUnderTheTree (NodeOpCh (node->right)), num  								 (2)));
-					break;
-
-				case CTH:
-					return NodeOpDiv (NodeOpSub 
-									 (NodeOpMul    (diff (dumpFile,   NodeOpCh (node->right)), CopyUnderTheTree (NodeOpSh (node->right ))), 
-									  NodeOpMul    (CopyUnderTheTree (NodeOpCh (node->right)), diff (dumpFile,   NodeOpSh (node->right)))),
-									  NodeOpDegree (CopyUnderTheTree (NodeOpSh (node->right)), num  								 (2)));
-
-
-				default: 
+				default:
 					printf ("So operation not found. Num command: %d\n", node->num);
 					exit (EXIT_FAILURE);
 					break;
-
 			}
 
 		default:
@@ -697,7 +649,7 @@ Node * NodeOpDegree (Node * left, Node * right) {
 Node * NodeOpCos (Node * right) {
 
 	Node currentNode =  {};
-	currentNode.num  = COS;
+	currentNode.num  = FUNC_cos;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
 }
@@ -706,7 +658,7 @@ Node * NodeOpCos (Node * right) {
 Node * NodeOpSin (Node * right) { 
 
 	Node currentNode = {};
-	currentNode.num = SIN;
+	currentNode.num = FUNC_sin;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
 }
@@ -715,7 +667,7 @@ Node * NodeOpSin (Node * right) {
 Node * NodeOpSh (Node * right) {
 
 	Node currentNode = {};
-	currentNode.num  = SH;
+	currentNode.num  = FUNC_sh;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
 }
@@ -724,7 +676,7 @@ Node * NodeOpSh (Node * right) {
 Node * NodeOpCh (Node * right) {
 
 	Node currentNode = {};
-	currentNode.num  = CH;
+	currentNode.num  = FUNC_ch;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
 }
@@ -733,7 +685,7 @@ Node * NodeOpCh (Node * right) {
 Node * Ln (Node * node) {
 
 	Node currentNode = {};
-	currentNode.op   = LN;
+	currentNode.op   = FUNC_ln;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
 }
@@ -742,7 +694,7 @@ Node * Ln (Node * node) {
 Node * NodeOpLog (Node * node) {
 
 	Node currentNode =  {};
-	currentNode.op   = LOG;
+	currentNode.op   = FUNC_log;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
 }
@@ -847,85 +799,33 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             		fprintf(dumpFile, "}");
             		break;
 
-            	case LN:
-            		fprintf (dumpFile, "ln(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
-            	case SIN:
-            		fprintf (dumpFile, "sin(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
-            	case COS:
-            		fprintf (dumpFile, "cos(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
-            	case SH:
-            		fprintf (dumpFile, "sh(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
-            	case CH:
-            		fprintf (dumpFile, "ch(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
-            	case TH:
-            		fprintf (dumpFile, "th(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
-            	case CTH:
-            		fprintf (dumpFile, "cth(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
-            	case LOG:
-            		fprintf (dumpFile, "log(");
-            		if (node->left)
-            			GraphTreePrint (dumpFile, node->left);
-            		if (node->right)
-            			GraphTreePrint (dumpFile, node->right);
-            		fprintf (dumpFile, ")");
-            		break;
-
             	default:
             		break;
-			}
+            	}
 
-		default:
-			break;
-	}
+            	#define FUNCTIONS(name, num, amountSigns, ...) 		\
+            		case num:								  		\
+            			fprintf (dumpFile, "%s(", #name);	  		\
+            			if (node->left)								\
+            				GraphTreePrint (dumpFile, node->left);	\
+            			if (node->right)							\
+            				GraphTreePrint (dumpFile, node->right); \
+            			fprintf (dumpFile, ")");					\
+            			break;
+
+            	switch (node->num) {
+
+            		#include "diffFunctions.h"
+            		#undef FUNCTIONS
+
+            		default:
+            			break;
+
+            	}
+
+            	default:
+					break;
+			}
 }
 
 
@@ -963,6 +863,4 @@ void print (FILE * dumpFile, Node * node) {
     fprintf (dumpFile, " $$ ");
     fprintf (dumpFile, "\\end{document}\n");
 }
-
-
-
+		
