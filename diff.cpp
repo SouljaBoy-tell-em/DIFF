@@ -40,6 +40,7 @@ enum TypeVar {
 
 enum functions {
 
+	LOG,
 	LN,
 	SIN,
 	COS,
@@ -116,7 +117,7 @@ Node * NodeOpSub (Node * left, Node * right);
 Node * NodeOpSin (Node * right);
 Node * NodeOpSh (Node * right);
 Node * NodeOpCh (Node * right);
-Node * Ln (Node * node, FILE * dumpFile);
+Node * Ln (Node * node);
 Node * num (int num);
 void print (FILE * dumpFile, Node * node);
 
@@ -386,6 +387,13 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 	fgets (funcCommandBuffer, 4, dumpFile);
 	printf ("command: %s\n", funcCommandBuffer);
 
+	if (!strcmp (funcCommandBuffer, "log")) {
+
+		( * currentNode)->type =  OP;
+		( * currentNode)->num  = LOG;
+		return ERROR_OFF;
+	}
+
 	if (!strcmp (funcCommandBuffer, "ln(")) {
 
 		ungetc ('(', dumpFile);
@@ -443,6 +451,7 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
 		( * currentNode)->num  = CH;
+		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "th(")) {
@@ -450,12 +459,20 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 		ungetc ('(', dumpFile);
 		( * currentNode)->type = OP;
 		( * currentNode)->num  = TH;
+		return ERROR_OFF;
 	}
 
 	if (!strcmp (funcCommandBuffer, "cth")) {
 
 		( * currentNode)->type =  OP;
 		( * currentNode)->num  = CTH;
+		return ERROR_OFF;
+	}
+
+	else {
+
+		printf ("Function %s not found.\n", funcCommandBuffer);
+		exit (EXIT_FAILURE);
 	}
 
 	return ERROR_OFF;
@@ -526,7 +543,7 @@ Node * diff (FILE * dumpFile, Node * node) {
 							// (const) ^ const;
 
 						else
-							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), Ln (node->left, dumpFile)), 
+							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), Ln (node->left)), 
 																				  			  diff (dumpFile, node->right));
 							// (const) ^ f(x); NodeOpMul (NodeOpMul (NodeOpDegree (left, right), Ln (left)), dR));
 					}
@@ -544,7 +561,7 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 					else
 						return NodeOpMul (NodeOpDegree (node->left, node->right), diff (dumpFile, NodeOpMul (node->right, 
-																							Ln (node->left, dumpFile))));
+																							Ln (node->left))));
 						// (f(x)) ^ g(x); NodeOpMul (NodeOpDegree (left, right), d (NodeOpMul (right, ln (left))));
 					break;
 
@@ -560,6 +577,10 @@ Node * diff (FILE * dumpFile, Node * node) {
 			}
 
 			switch (node->num) {
+
+				case LOG:
+					return NodeOpDiv (diff (dumpFile, node->right), NodeOpMul (node->right, (Ln (num (10)))));
+					break;
 
 				case LN:
 					return NodeOpDiv (diff (dumpFile, node->right), CopyUnderTheTree (node->right));
@@ -709,10 +730,19 @@ Node * NodeOpCh (Node * right) {
 }
 
 
-Node * Ln (Node * node, FILE * dumpFile) {
+Node * Ln (Node * node) {
 
 	Node currentNode = {};
 	currentNode.op   = LN;
+
+	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
+}
+
+
+Node * NodeOpLog (Node * node) {
+
+	Node currentNode =  {};
+	currentNode.op   = LOG;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
 }
@@ -880,6 +910,15 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             		fprintf (dumpFile, ")");
             		break;
 
+            	case LOG:
+            		fprintf (dumpFile, "log(");
+            		if (node->left)
+            			GraphTreePrint (dumpFile, node->left);
+            		if (node->right)
+            			GraphTreePrint (dumpFile, node->right);
+            		fprintf (dumpFile, ")");
+            		break;
+
             	default:
             		break;
 			}
@@ -924,3 +963,5 @@ void print (FILE * dumpFile, Node * node) {
     fprintf (dumpFile, " $$ ");
     fprintf (dumpFile, "\\end{document}\n");
 }
+
+
