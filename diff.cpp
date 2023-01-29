@@ -15,7 +15,7 @@ enum error_code {
 
 enum graph_dump_commands {
 
-	HEAD,
+	HEAD = 0,
 	FIRSTLY
 };
 
@@ -97,8 +97,8 @@ Node * CopyUnderTheTree (Node * node);
 Node * diff (FILE * dumpFile, Node * node);
 void GraphDiffNode (FILE * dumpFile, Node * node);
 void diffNode(FILE * dumpFile, Node * node);
-int graphDump (Node * head);
-void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandGraphDump);
+int graphDump (Node * head, FILE * graphDumpFile);
+void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile);
 void GraphNodeOpAdd (FILE * dumpFile, Node * node);
 void GraphNodeOpSub (FILE * dumpFile, Node * node);
 void GraphTreePrint (FILE * dumpFile, Node * node);
@@ -111,16 +111,18 @@ Node * NodeOpMul (Node * left, Node * right);
 Node * NodeOpSub (Node * left, Node * right);
 Node * NodeOpFunc (Node * node, enum func _FUNC);
 Node * num (int num);
-void print (FILE * dumpFile, Node * node);
+Node * print (FILE * dumpFile, Node * node);
 
 
 int main (void) {
 
 	FILE * graphDumpFile = fopen ("graphDump.txt", "w");
 	FILE * dumpFile = fopen ("equation.txt", "r");
+	FILE * simplificationFile = fopen ("simplificationFile.txt", "w");
 	Tree tree = {};
 	InitializeNode (&(tree.head), dumpFile, NULL);
-	//graphDump (tree.head);
+	
+	//graphDump (tree.head, simplificationFile);
 	print (graphDumpFile, tree.head);
 
 	return 0;
@@ -205,20 +207,11 @@ int constructor (Node ** currentNode, Node * parentCurrentNode) {
 }
 
 
-int graphDump (Node * head) {
+int graphDump (Node * head, FILE * graphDumpFile) {
 
-	FILE * graphDumpFile = fopen ("graphDump.txt", "w");
-	CHECK_ERROR(!graphDumpFile, "Problem with opening graphDump.txt.\n");
-
-	int commandGraphDump = HEAD;
 	fprintf (graphDumpFile, "digraph G {\n rankdir=L\n");
-	graphDumpDrawNode (head, graphDumpFile, &commandGraphDump);
+	graphDumpDrawNode (head, graphDumpFile);
 	fprintf (graphDumpFile, "}");
-	fseek (graphDumpFile, STARTLETTERGRAPHDUMP, SEEK_SET);
-	fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-			 head, ORANGE, head->op);	
-
-	fclose (graphDumpFile);
 
 	return ERROR_OFF;
 }
@@ -268,70 +261,69 @@ Node * CopyUnderTheTree (Node * node) {
 }
 
 
-void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile, int * commandGraphDump) {
+void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile) {
 
-	if (currentNode != NULL) {
+	if (!currentNode)
+		return;
 
-		if (( * commandGraphDump) != HEAD) {
+	if (currentNode->left) {
 
-			if (currentNode->type == OP) {
+		fprintf (graphDumpFile, "node%p->node%p[color=black];\n", currentNode, currentNode->left);
+		graphDumpDrawNode (currentNode->left, graphDumpFile);
+	}
 
-				if (( * commandGraphDump) == FIRSTLY)
-				fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-				currentNode, ORANGE, (currentNode->parent)->op);
+	switch (currentNode->type) {
 
-				if ((currentNode->parent)->left == currentNode)
-					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",
-					currentNode, 			  GREEN,           currentNode->op);
+		case NUM:
+			fprintf (graphDumpFile, "node%p[shape=record, label=\"%d\"];\n", currentNode, currentNode->num);
+			break; 
 
-				if ((currentNode->parent)->right == currentNode)
-					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-					currentNode, 				RED,    	   currentNode->op);
+		case VAR:
+			fprintf (graphDumpFile, "node%p[shape=record, label=\"%c\"];\n", currentNode, currentNode->op);
+			break;
 
-				fprintf (graphDumpFile, "block%p -> block%p\n",
-					currentNode->parent, 				   currentNode);
+		case OP:
+			switch (currentNode->op) {
+
+				case ADD:
+					fprintf (graphDumpFile, "node%p[shape=record, label=\"%c\"];\n", currentNode, currentNode->op);
+					break; 
+				case SUB:
+					fprintf (graphDumpFile, "node%p[shape=record, label=\"%c\"];\n", currentNode, currentNode->op);
+					break; 	
+				case MUL:
+					fprintf (graphDumpFile, "node%p[shape=record, label=\"%c\"];\n", currentNode, currentNode->op);
+					break; 
+				case DIV:
+					fprintf (graphDumpFile, "node%p[shape=record, label=\"%c\"];\n", currentNode, currentNode->op);
+					break;
+
+				default:
+					break; 
 			}
 
-			if (currentNode->type == NUM) {
+			#define FUNCTIONS(name, num, amountSigns, ...)													\
+				case num:																					\
+					fprintf (graphDumpFile, "node%p [shape=record, label=\""#name"\"];\n", currentNode);	\
+					break;
+			
+			switch (currentNode->num) {
 
-				if (( * commandGraphDump) == FIRSTLY)
-					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%d\"];\n",  
-					currentNode, ORANGE, (currentNode->parent)->num);
+            		#include "diffFunctions.h"
+            		#undef FUNCTIONS
 
-				if ((currentNode->parent)->left == currentNode)
-					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%d\"];\n",
-					currentNode, 			  GREEN,           currentNode->num);
+            		default:
+            			break;
+            	}		
 
-				if ((currentNode->parent)->right == currentNode)
-					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%d\"];\n",  
-					currentNode, 				RED,    	   currentNode->num);
+        default:
+        	break;															
+	}
 
-				fprintf (graphDumpFile, "block%p -> block%p\n",
-					currentNode->parent, 				   currentNode);
-			}
+	if (currentNode->right) {
 
-			if (currentNode->type == VAR) {
-
-				if (( * commandGraphDump) == FIRSTLY)
-				fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-				currentNode, ORANGE, (currentNode->parent)->op);
-
-				if ((currentNode->parent)->left == currentNode)
-					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",
-					currentNode, 			  GREEN,           currentNode->op);
-
-				if ((currentNode->parent)->right == currentNode)
-					fprintf (graphDumpFile, "block%p [shape=record, color=\"%s\", label=\"%c\"];\n",  
-					currentNode, 				RED,    	   currentNode->op);
-
-				fprintf (graphDumpFile, "block%p -> block%p\n",
-					currentNode->parent, 				   currentNode);
-			}			
-		}
-
-		( * commandGraphDump)++                                                ;
-		graphDumpDrawNode (currentNode->left, graphDumpFile,  commandGraphDump);
-		graphDumpDrawNode (currentNode->right, graphDumpFile, commandGraphDump);
+		fprintf (graphDumpFile, "node%p->node%p[color=black];\n", currentNode, currentNode->right);
+		graphDumpDrawNode (currentNode->right, graphDumpFile);
 	}
 }
 
@@ -764,16 +756,7 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             			fprintf (dumpFile, ")");					\
             			break;
 
-            	switch (node->num) {
-
-            		#include "diffFunctions.h"
-            		#undef FUNCTIONS
-
-            		default:
-            			break;
-
-            	}
-
+            	
             	default:
 					break;
 			}
@@ -801,7 +784,7 @@ Node * num (int num) {
 }
 
 
-void print (FILE * dumpFile, Node * node) {
+Node * print (FILE * dumpFile, Node * node) {
 
 	Node * nodeDiff = NULL;
 
@@ -813,9 +796,10 @@ void print (FILE * dumpFile, Node * node) {
     GraphTreePrint (dumpFile, nodeDiff);
     fprintf (dumpFile, " $$ ");
     fprintf (dumpFile, "\\end{document}\n");
+
+	FILE * simplificationFile = fopen ("simplificationFile.txt", "w");
+    graphDump (nodeDiff, simplificationFile);
+
+    return nodeDiff;
 }
 		
-
-
-
-
