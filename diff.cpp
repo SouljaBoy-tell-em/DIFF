@@ -105,15 +105,11 @@ void GraphTreePrint (FILE * dumpFile, Node * node);
 int InitializeNode (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode);
 Node * nodeAdd (Type type, Node * node, Node currentNode, Node * left, Node * right);
 Node * NodeOpAdd (Node * left, Node * right);
-Node * NodeOpCos (Node * right);
 Node * NodeOpDegree (Node * left, Node * right);
 Node * NodeOpDiv (Node * left, Node * right);
 Node * NodeOpMul (Node * left, Node * right);
 Node * NodeOpSub (Node * left, Node * right);
-Node * NodeOpSin (Node * right);
-Node * NodeOpSh (Node * right);
-Node * NodeOpCh (Node * right);
-Node * Ln (Node * node);
+Node * NodeOpFunc (Node * node, enum func _FUNC);
 Node * num (int num);
 void print (FILE * dumpFile, Node * node);
 
@@ -539,8 +535,8 @@ Node * diff (FILE * dumpFile, Node * node) {
 							// (const) ^ const;
 
 						else
-							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), Ln (node->left)), 
-																				  			  diff (dumpFile, node->right));
+							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), NodeOpFunc (node->left, FUNC_ln)), 
+																				  			 		 diff (dumpFile, node->right));
 							// (const) ^ f(x); NodeOpMul (NodeOpMul (NodeOpDegree (left, right), Ln (left)), dR));
 					}
 
@@ -557,7 +553,7 @@ Node * diff (FILE * dumpFile, Node * node) {
 
 					else
 						return NodeOpMul (NodeOpDegree (node->left, node->right), diff (dumpFile, NodeOpMul (node->right, 
-																							Ln (node->left))));
+																					 NodeOpFunc (node->left, FUNC_ln))));
 						// (f(x)) ^ g(x); NodeOpMul (NodeOpDegree (left, right), d (NodeOpMul (right, ln (left))));
 					break;
 
@@ -646,55 +642,10 @@ Node * NodeOpDegree (Node * left, Node * right) {
 }
 
 
-Node * NodeOpCos (Node * right) {
-
+Node * NodeOpFunc (Node * node, enum func _FUNC) {
+	
 	Node currentNode =  {};
-	currentNode.num  = FUNC_cos;
-
-	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
-}
-
-
-Node * NodeOpSin (Node * right) { 
-
-	Node currentNode = {};
-	currentNode.num = FUNC_sin;
-
-	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
-}
-
-
-Node * NodeOpSh (Node * right) {
-
-	Node currentNode = {};
-	currentNode.num  = FUNC_sh;
-
-	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
-}
-
-
-Node * NodeOpCh (Node * right) {
-
-	Node currentNode = {};
-	currentNode.num  = FUNC_ch;
-
-	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (right));
-}
-
-
-Node * Ln (Node * node) {
-
-	Node currentNode = {};
-	currentNode.op   = FUNC_ln;
-
-	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
-}
-
-
-Node * NodeOpLog (Node * node) {
-
-	Node currentNode =  {};
-	currentNode.op   = FUNC_log;
+	currentNode.op   = _FUNC;
 
 	return nodeAdd (OP, NULL, currentNode, NULL, CopyUnderTheTree (node));
 }
@@ -864,3 +815,7 @@ void print (FILE * dumpFile, Node * node) {
     fprintf (dumpFile, "\\end{document}\n");
 }
 		
+
+
+
+
