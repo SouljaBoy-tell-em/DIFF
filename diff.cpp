@@ -38,6 +38,13 @@ enum TypeVar {
 };
 
 
+enum change {
+
+	NO,
+	YES
+};
+
+
 const char * GREEN = "green";
 const char * RED = "red";
 const char * ORANGE = "orange";
@@ -107,11 +114,13 @@ Node * nodeAdd (Type type, Node * node, Node currentNode, Node * left, Node * ri
 Node * NodeOpAdd (Node * left, Node * right);
 Node * NodeOpDegree (Node * left, Node * right);
 Node * NodeOpDiv (Node * left, Node * right);
+void NodeDtor (Node * node);
 Node * NodeOpMul (Node * left, Node * right);
 Node * NodeOpSub (Node * left, Node * right);
 Node * NodeOpFunc (Node * node, enum func _FUNC);
 Node * num (int num);
 Node * print (FILE * dumpFile, Node * node);
+void simplificationDiffTree (Node ** node, int * change);
 
 
 int main (void) {
@@ -121,8 +130,7 @@ int main (void) {
 	FILE * simplificationFile = fopen ("simplificationFile.txt", "w");
 	Tree tree = {};
 	InitializeNode (&(tree.head), dumpFile, NULL);
-	
-	//graphDump (tree.head, simplificationFile);
+	//graphDump (tree.head, graphDumpFile);
 	print (graphDumpFile, tree.head);
 
 	return 0;
@@ -297,6 +305,9 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile) {
 				case DIV:
 					fprintf (graphDumpFile, "node%p[shape=record, label=\"%c\"];\n", currentNode, currentNode->op);
 					break;
+				case DEG:
+					fprintf (graphDumpFile, "node%p[shape=record, label=\"%c\"];\n", currentNode, currentNode->op);
+					break;
 
 				default:
 					break; 
@@ -330,133 +341,119 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile) {
 
 int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNode) {
 
-	char opBuffer   		                 =             '\0';
-	int  intBuffer                           =               0 , 
-		 pointerFilePlaceStart               = ftell (dumpFile), 
-		 pointerFilePlaceFinish              =               0 ;
-	bool isNumber                            =            false;
+	char opBuffer   		      = '\0';
+	int  intBuffer                =   0 ;
+	char funcBuffer [LENFUNCTION] = "\0";
 
-	if (fscanf (dumpFile, "%d", &intBuffer) == 1)
-		isNumber = true;
-
-	if (isNumber) {
-
-		( * currentNode)->type =       NUM;
-		( * currentNode)->num  = intBuffer;
-		return ERROR_OFF;
-	}
-
-	pointerFilePlaceFinish = ftell (dumpFile);
-	fseek (dumpFile, pointerFilePlaceStart - pointerFilePlaceFinish, SEEK_CUR);
 	fscanf (dumpFile, "%c", &opBuffer);
 
-	if (strchr ("*/+-^", opBuffer) && !isNumber) {
+	if (strchr ("*/+-^", opBuffer)) {
 
 		( * currentNode)->type = OP;
 		( * currentNode)->op = opBuffer;
 		return ERROR_OFF;
 	}
 
-	if (opBuffer == 'x' && !isNumber) {
+	else if (opBuffer == 'x') {
 
-		( * currentNode)->type =       VAR;
-		( * currentNode)->op   =  opBuffer;
+		( * currentNode)->type = VAR;
+		( * currentNode)->op   = opBuffer;
 		return ERROR_OFF;
 	}
 
+	else if (isalpha (opBuffer)) {
 
-	pointerFilePlaceFinish = ftell (dumpFile);
-	fseek (dumpFile, pointerFilePlaceStart - pointerFilePlaceFinish, SEEK_CUR);
-	char funcCommandBuffer [LENFUNCTION] = "\0";
-	fgets (funcCommandBuffer, 4, dumpFile);
-	printf ("command: %s\n", funcCommandBuffer);
+		int index = 0;
+		while (isalpha (opBuffer)) {
 
-	if (!strcmp (funcCommandBuffer, "log")) {
+			funcBuffer [index] = opBuffer;
+			index++;
+			fscanf (dumpFile, "%c", &opBuffer);
+		}
 
-		( * currentNode)->type =  OP;
-		( * currentNode)->num  = FUNC_log;
-		return ERROR_OFF;
+		ungetc (opBuffer, dumpFile);
+
+		/*
+
+		#define FUNCTIONS(name, num, amountSigns, ...) \
+			if (!strcmp (funcBuffer, #name)) {   	   \
+				( * currentNode)->type =  OP;		   \
+				( * currentNode)->num  = num;		   \
+			}
+
+		#include "diffFunctions.h"
+		#undef FUNCTIONS
+
+		*/
+
+		if (!strcmp (funcBuffer, "log")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_log;
+		}
+
+		if (!strcmp (funcBuffer, "ln")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_ln;
+		}
+
+		if (!strcmp (funcBuffer, "sin")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_sin;
+		}
+
+		if (!strcmp (funcBuffer, "cos")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_cos;
+		}
+
+		if (!strcmp (funcBuffer, "tg")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_tg;
+		}
+
+		if (!strcmp (funcBuffer, "ctg")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_ctg;
+		}
+
+		if (!strcmp (funcBuffer, "sh")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_sh;
+		}
+
+		if (!strcmp (funcBuffer, "ch")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_ch;
+		}
+
+		if (!strcmp (funcBuffer, "th")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_sin;
+		}
+
+		if (!strcmp (funcBuffer, "cth")) {
+
+			( * currentNode)->type =  OP;
+			( * currentNode)->num  = FUNC_sin;
+		}
 	}
 
-	if (!strcmp (funcCommandBuffer, "ln(")) {
-
-		ungetc ('(', dumpFile);
-		( * currentNode)->type = OP;
-		( * currentNode)->num  = FUNC_ln;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "sin")) {
-
-		( * currentNode)->type =  OP;
-		( * currentNode)->num  = FUNC_sin;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "cos")) {
-
-		( * currentNode)->type =  OP;
-		( * currentNode)->num  = FUNC_cos;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "tg(")) {
-
-		ungetc ('(', dumpFile);
-		( * currentNode)->type = OP;
-		( * currentNode)->num  = FUNC_tg;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "ctg")) {
-
-		( * currentNode)->type =  OP;
-		( * currentNode)->num  = FUNC_ctg;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "exp")) {
-
-		( * currentNode)->type   =  OP;
-		( * currentNode)->dbl    = EXP;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "sh(")) {
-
-		ungetc ('(', dumpFile);
-		( * currentNode)->type = OP;
-		( * currentNode)->num  = FUNC_sh;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "ch(")) {
-
-		ungetc ('(', dumpFile);
-		( * currentNode)->type = OP;
-		( * currentNode)->num  = FUNC_ch;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "th(")) {
-
-		ungetc ('(', dumpFile);
-		( * currentNode)->type = OP;
-		( * currentNode)->num  = FUNC_th;
-		return ERROR_OFF;
-	}
-
-	if (!strcmp (funcCommandBuffer, "cth")) {
-
-		( * currentNode)->type =  OP;
-		( * currentNode)->num  = FUNC_cth;
-		return ERROR_OFF;
-	}
 
 	else {
 
-		printf ("Function %s not found.\n", funcCommandBuffer);
-		exit (EXIT_FAILURE);
+		ungetc (opBuffer, dumpFile);
+		fscanf (dumpFile, "%d", &intBuffer);
+		( * currentNode)->type = NUM;
+		( * currentNode)->num  = intBuffer;
 	}
 
 	return ERROR_OFF;
@@ -756,10 +753,18 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             			fprintf (dumpFile, ")");					\
             			break;
 
-            	
-            	default:
-					break;
-			}
+            	switch (node->num) {
+
+            		#include "diffFunctions.h"
+            		#undef FUNCTIONS
+
+            		default:
+            			break;
+            	}
+
+        default:
+        	break;
+	}
 }
 
 
@@ -787,9 +792,20 @@ Node * num (int num) {
 Node * print (FILE * dumpFile, Node * node) {
 
 	Node * nodeDiff = NULL;
+	int change = NO;
 
 	checkIn (dumpFile);
 	nodeDiff = diff (dumpFile, node);
+
+	/*
+
+	do {
+
+		change = NO;
+		simplificationDiffTree (&nodeDiff, &change);
+	} while (change == YES);
+
+	*/
 
 	fprintf (dumpFile, " TOTAL: \n \\newline ");
     fprintf (dumpFile, " $$ ");
@@ -797,9 +813,108 @@ Node * print (FILE * dumpFile, Node * node) {
     fprintf (dumpFile, " $$ ");
     fprintf (dumpFile, "\\end{document}\n");
 
-	FILE * simplificationFile = fopen ("simplificationFile.txt", "w");
-    graphDump (nodeDiff, simplificationFile);
+    FILE * treeDiffFile = fopen ("treeDiff.txt", "w");
+    graphDump (nodeDiff, treeDiffFile);
 
     return nodeDiff;
 }
-		
+
+
+void simplificationDiffTree (Node ** node, int * change) {
+
+	Node * defaultNode = * node;
+
+	if (( * node)->type == OP && ( * node)->op == MUL) {
+
+		if (((( * node)->right)->type == NUM) && ((( * node)->right)->num == 1)) {
+
+			NodeDtor (( * node)->right);
+			( * node)->right = NULL;
+			* node = CopyUnderTheTree (( * node)->left);
+		}
+
+		else if (((( * node)->left)->type == NUM) && ((( * node)->left)->num == 1)) {
+
+			NodeDtor (( * node)->left);
+			( * node)->left = NULL;
+			* node = CopyUnderTheTree (( * node)->right);
+		}
+
+		else if (((( * node)->right)->type == NUM) && ((( * node)->right)->num == 0) || ((( * node)->left)->type == NUM) && ((( * node)->left)->num == 0)) {
+
+			NodeDtor (( * node)->left);
+			NodeDtor (( * node)->right);
+			( * node)->left = NULL;
+			( * node)->right = NULL;
+			* node = num (0); 
+		}
+
+		else if (((( * node)->right)->type == OP) && ((( * node)->right)->op == DIV) && (((( * node)->right)->left)->type == NUM) && (((( * node)->right)->left)->num == 1) && (( * node)->left)) {
+			
+			NodeDtor ((( * node)->right)->left);
+			( * node)->right = CopyUnderTheTree ((( * node)->right)->right);
+			NodeDtor ((( * node)->right)->right);
+			( * node)->op = DIV;
+		}
+
+		else if (((( * node)->left)->type == OP) && ((( * node)->left)->op == DIV) && (((( * node)->left)->left)->type == NUM) && (((( * node)->left)->left)->num == 1) && (( * node)->right)) {
+
+			Node * copyNode = CopyUnderTheTree ((( * node)->left)->right);
+			( * node)->left = CopyUnderTheTree ( ( * node)->right);
+			( * node)->right = copyNode;
+			( * node)->op = DIV;
+		}
+	}
+
+	if (( * node)->type == OP && ( * node)->op == ADD) {
+
+		if (((( * node)->right)->type == NUM) && ((( * node)->right)->num == 0)) {
+
+			NodeDtor (( * node)->right);
+			* node = CopyUnderTheTree (( * node)->left);
+		}
+
+		else if (((( * node)->left)->type == NUM) && ((( * node)->left)->num == 0)) {
+
+			NodeDtor (( * node)->left);
+			* node = CopyUnderTheTree (( * node)->right);
+		}
+	}
+
+	if (( * node)->type == OP && ( * node)->op == SUB) {
+
+		if (((( * node)->right)->type == NUM) && ((( * node)->right)->num == 0)) {
+
+			NodeDtor (( * node)->right);
+			* node = CopyUnderTheTree (( * node)->left);
+		}
+
+		else if (((( * node)->left)->type == NUM) && ((( * node)->left)->num == 0)) {
+
+			NodeDtor (( * node)->left);
+			* node = CopyUnderTheTree (( * node)->right);
+			( * node)->num = 0 - (( * node)->num);
+		}
+	}
+
+	if (( * node)->left)
+		simplificationDiffTree (&(( * node)->left),  change);
+	
+	if (( * node)->right)
+		simplificationDiffTree (&(( * node)->right), change);
+
+	if ( * node != defaultNode)
+		* change = YES;
+
+}		
+
+
+void NodeDtor (Node * node) {
+
+	if (node) {
+
+		NodeDtor (node->left);
+		NodeDtor (node->right);
+		free (node);
+	}
+}
