@@ -370,17 +370,25 @@ Node * diff (FILE * dumpFile, Node * node) {
 				case DEG:
 					if ((node->left)->type == NUM) {
 
-						if ((node->right)->type == NUM)
+						if ((node->right)->type == NUM) {
+							
+							PrintConst (dumpFile, node, 0);
 							return num (0);
-							// (const) ^ const;
+						}
+						// (const) ^ const;
 
-						else
+						else {
+
+							PrintDeg1st (dumpFile, node);
 							return NodeOpMul (NodeOpMul (NodeOpDegree (node->left, node->right), NodeOpFunc (node->left, FUNC_ln)), 
-																				  			 		 diff (dumpFile, node->right));
+														 											 diff (dumpFile, node->right));
+						}
 							// (const) ^ f(x); NodeOpMul (NodeOpMul (NodeOpDegree (left, right), Ln (left)), dR));
 					}
 
 					else if ((node->right)->type == NUM) {
+
+						PrintDeg2nd (dumpFile, node);
 
 						Node * currentNode = (Node * ) malloc (sizeof (Node));
 						CHECK_ERROR(! currentNode, "Problem with allocating memory for currentNode.");
@@ -393,13 +401,17 @@ Node * diff (FILE * dumpFile, Node * node) {
 						// (f(x)) ^ const; NodeOpMul (NodeOpMul (NodeOpDegree (left), cR), dL);
 					}
 
-					else
+					else {
+
+						PrintDeg3rd (dumpFile, node);
 						return NodeOpMul (NodeOpDegree (node->left, node->right), diff (dumpFile, NodeOpMul (node->right, 
 																					 NodeOpFunc (node->left, FUNC_ln))));
+					}
 						// (f(x)) ^ g(x); NodeOpMul (NodeOpDegree (left, right), d (NodeOpMul (right, ln (left))));
 					break;
 
 				case DIV:
+					PrintDiv (dumpFile, node);
 					return NodeOpDiv (NodeOpSub (NodeOpMul (diff (dumpFile, node->left), CopyUnderTheTree (node->right)), 
 						   NodeOpMul 					  (CopyUnderTheTree (node->left), diff (dumpFile, node->right))), 
 						   NodeOpDegree 									  (CopyUnderTheTree (node->right), num (2)));
@@ -409,7 +421,6 @@ Node * diff (FILE * dumpFile, Node * node) {
 				default:
 					break;
 			}
-
 
 			#define FUNCTIONS(name, num, amountSigns, ...) \
 				case num:								   \
@@ -742,6 +753,69 @@ void PrintAdd (FILE * dumpFile, Node * node) {
 	fprintf (dumpFile, " + ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, "$$\n \\newline");
+}
+
+
+void PrintDeg1st (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	PrintNode (dumpFile, node);
+	fprintf (dumpFile, " \\cdot \\ln \\left( %d \\right) \\cdot", (node->left)->num);
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintDeg2nd (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, "%d", (node->right)->num);
+	(node->right)->num = (node->right)->num - 1;
+	fprintf (dumpFile, " \\cdot ");
+	PrintNode (dumpFile, node);
+	(node->right)->num = (node->right)->num + 1;
+	fprintf (dumpFile, " \\cdot ");
+	PrintDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintDeg3rd (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	PrintNode (dumpFile, node);
+	fprintf (dumpFile, " \\cdot \\left(");
+	PrintNode (dumpFile, node->right);
+	fprintf (dumpFile, " \\cdot \\ln ");
+	PrintNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\right)'");
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintDiv (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, "\\frac{ ");
+	PrintDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cdot ");
+	PrintNode (dumpFile, node->right);
+	fprintf (dumpFile, " - ");
+	PrintNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cdot ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, "}{");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, "^2 }");
+	fprintf (dumpFile, " $$\n \\newline");
 }
 
 
