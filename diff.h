@@ -919,11 +919,7 @@ Node * simplificationDiffTree (Node ** node, int * change) {
 
 		else if ((( * node)->right)->type == NUM && (( * node)->right)->num  == 1) {
 
-			( * node)->type = NUM;
-			( * node)->num  =   1;
-
-			free (( * node)->left );
-			free (( * node)->right);
+			( * node) = ( * node)->left;
 		}
 
 		else if ((( * node)->left)->type == NUM && (( * node)->left)->num    == 1) {
