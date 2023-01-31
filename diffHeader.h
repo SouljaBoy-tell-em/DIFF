@@ -61,7 +61,7 @@ enum change {
             } while(false)
 
 
-#define FUNCTIONS(name, num, amountSigns, ...) \
+#define FUNCTIONS(name, num, ...) \
     FUNC_##name = num,
 
 enum func {
@@ -118,12 +118,23 @@ Node * NodeOpFunc (Node * node, enum func _FUNC);
 Node * num (int num);
 Node * print (FILE * dumpFile, Node * node);
 void PrintAdd (FILE * dumpFile, Node * node);
+void PrintCh (FILE * dumpFile, Node * node);
 void PrintConst (FILE * dumpFile, Node * node, int num);
+void PrintCos (FILE * dumpFile, Node * node);
+void PrintCtg (FILE * dumpFile, Node * node);
+void PrintCth (FILE * dumpFile, Node * node);
 void PrintDeg1st (FILE * dumpFile, Node * node);
 void PrintDeg2nd (FILE * dumpFile, Node * node);
 void PrintDeg3rd (FILE * dumpFile, Node * node);
 void PrintDiffNode (FILE * dumpFile, Node * node);
 void PrintDiv (FILE * dumpFile, Node * node);
+void PrintLn (FILE * dumpFile, Node * node);
+void PrintLog (FILE * dumpFile, Node * node);
 void PrintMul (FILE * dumpFile, Node * node);
+void PrintNode (FILE * dumpFile, Node * node);
+void PrintSin (FILE * dumpFile, Node * node);
+void PrintSh (FILE * dumpFile, Node * node);
 void PrintSub (FILE * dumpFile, Node * node);
+void PrintTg (FILE * dumpFile, Node * node);
+void PrintTh (FILE * dumpFile, Node * node);
 Node * simplificationDiffTree (Node ** node, int * change);
