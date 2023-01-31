@@ -184,7 +184,7 @@ void graphDumpDrawNode (Node * currentNode, FILE * graphDumpFile) {
 					break; 
 			}
 
-			#define FUNCTIONS(name, num, amountSigns, ...)													\
+			#define FUNCTIONS(name, num, ...)													\
 				case num:																					\
 					fprintf (graphDumpFile, "node%p [shape=record, label=\""#name"\"];\n", currentNode);	\
 					break;
@@ -246,7 +246,7 @@ int detectArgument (Node ** currentNode, FILE * dumpFile, Node * parentCurrentNo
 
 		/*
 
-		#define FUNCTIONS(name, num, amountSigns, ...) \
+		#define FUNCTIONS(name, num, ...) \
 			if (!strcmp (funcBuffer, #name)) {   	   \
 				( * currentNode)->type =  OP;		   \
 				( * currentNode)->num  = num;		   \
@@ -422,22 +422,10 @@ Node * diff (FILE * dumpFile, Node * node) {
 					break;
 			}
 
-			switch (node->num) {
-
-				case FUNC_sin:
-					PrintSin (dumpFile, node);
-					return NodeOpMul (NodeOpFunc (node->right, FUNC_cos), diff (dumpFile, node->right));
-					break;
-
-				default:
-					break;
-			}
-
-			/*
-
-			#define FUNCTIONS(name, num, amountSigns, ...) \
-				case num:								    	 \
-					__VA_ARGS__									     \
+			#define FUNCTIONS(name, num, diff, ...) 				 \
+				case num:								             \
+					__VA_ARGS__										 \
+					diff	   								         \
 					break;	
 
 			switch (node->num) {
@@ -455,7 +443,6 @@ Node * diff (FILE * dumpFile, Node * node) {
 			printf ("So function not found.\n");
 			exit (EXIT_FAILURE);
 			break;
-*/
 	}
 }
 
@@ -562,7 +549,7 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
             		break;
             	}
 
-            	#define FUNCTIONS(name, num, amountSigns, ...) 		\
+            	#define FUNCTIONS(name, num, ...) 					\
             		case num:								  		\
             			fprintf (dumpFile, "%s(", #name);	  		\
             			if (node->left)								\
@@ -731,19 +718,29 @@ Node * print (FILE * dumpFile, Node * node) {
 }
 
 
-void PrintDiffNode (FILE * dumpFile, Node * node) {
+void PrintAdd (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, " \\left(");
-	GraphTreePrint (dumpFile, node);
-	fprintf (dumpFile, " \\right)'");
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	PrintDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " + ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, "$$\n \\newline");
 }
 
 
-void PrintNode (FILE * dumpFile, Node * node) {
+void PrintCh (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, " \\left(");
-	GraphTreePrint (dumpFile, node);
-	fprintf (dumpFile, " \\right)");
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " \\sh \\left( ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right) ");
+	fprintf (dumpFile, " \\cdot ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " $$\n \\newline");
 }
 
 
@@ -757,15 +754,47 @@ void PrintConst (FILE * dumpFile, Node * node, int num) {
 }
 
 
-void PrintAdd (FILE * dumpFile, Node * node) {
+void PrintCos (FILE * dumpFile, Node * node) {
 
 	fprintf (dumpFile, "$$ ");
 	PrintDiffNode (dumpFile, node);
 	fprintf (dumpFile, " = ");
-	PrintDiffNode (dumpFile, node->left);
-	fprintf (dumpFile, " + ");
+	fprintf (dumpFile, " - \\sin \\left( ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right) ");
+	fprintf (dumpFile, " \\cdot ");
 	PrintDiffNode (dumpFile, node->right);
-	fprintf (dumpFile, "$$\n \\newline");
+	fprintf (dumpFile, " $$$\n \\newline");
+}
+
+
+void PrintCtg (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " - \\frac{ ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " }{ ");
+	fprintf (dumpFile, " \\sin \\left( ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right)^2 }");
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintCth (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " \\frac{ ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " }{ ");
+	fprintf (dumpFile, " \\sh \\left( ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right)^2 }");
+	fprintf (dumpFile, " $$\n \\newline");
 }
 
 
@@ -812,6 +841,14 @@ void PrintDeg3rd (FILE * dumpFile, Node * node) {
 }
 
 
+void PrintDiffNode (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, " \\left(");
+	GraphTreePrint (dumpFile, node);
+	fprintf (dumpFile, " \\right)'");
+}
+
+
 void PrintDiv (FILE * dumpFile, Node * node) {
 
 	fprintf (dumpFile, "$$ ");
@@ -832,6 +869,36 @@ void PrintDiv (FILE * dumpFile, Node * node) {
 }
 
 
+void PrintLn (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " \\frac{ ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " }{ ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " } ");
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintLog (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " \\frac{");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " }{ ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\cdot ");
+	fprintf (dumpFile, "ln10");
+	fprintf (dumpFile, " }");
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
 void PrintMul (FILE * dumpFile, Node * node) {
 
 	fprintf (dumpFile, "$$ ");
@@ -842,6 +909,42 @@ void PrintMul (FILE * dumpFile, Node * node) {
 	PrintNode (dumpFile, node->right);
 	fprintf (dumpFile, " + ");
 	PrintNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cdot ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintNode (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, " \\left(");
+	GraphTreePrint (dumpFile, node);
+	fprintf (dumpFile, " \\right)");
+}
+
+
+void PrintSh (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " \\ch \\left( ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right) ");
+	fprintf (dumpFile, " \\cdot ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintSin (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " \\cos \\left(");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right) ");
 	fprintf (dumpFile, " \\cdot ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " $$\n \\newline");
@@ -860,16 +963,32 @@ void PrintSub (FILE * dumpFile, Node * node) {
 }
 
 
-void PrintSin (FILE * dumpFile, Node * node) {
+void PrintTg (FILE * dumpFile, Node * node) {
 
 	fprintf (dumpFile, "$$ ");
 	PrintDiffNode (dumpFile, node);
 	fprintf (dumpFile, " = ");
-	fprintf (dumpFile, " \\cos \\left(");
-	GraphTreePrint (dumpFile, node->right);
-	fprintf (dumpFile, " \\right) ");
-	fprintf (dumpFile, " \\cdot ");
+	fprintf (dumpFile, " \\frac{ ");
 	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " }{ ");
+	fprintf (dumpFile, " \\cos \\left( ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right)^2 }");
+	fprintf (dumpFile, "$$\n \\newline");
+}
+
+
+void PrintTh (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, " \\frac{ ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " }{ ");
+	fprintf (dumpFile, " \\ch \\left( ");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right)^2 }");
 	fprintf (dumpFile, " $$\n \\newline");
 }
 
@@ -977,3 +1096,6 @@ Node * simplificationDiffTree (Node ** node, int * change) {
 
 	return * node;
 }		
+
+
+
