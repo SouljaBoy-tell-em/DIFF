@@ -422,9 +422,22 @@ Node * diff (FILE * dumpFile, Node * node) {
 					break;
 			}
 
+			switch (node->num) {
+
+				case FUNC_sin:
+					PrintSin (dumpFile, node);
+					return NodeOpMul (NodeOpFunc (node->right, FUNC_cos), diff (dumpFile, node->right));
+					break;
+
+				default:
+					break;
+			}
+
+			/*
+
 			#define FUNCTIONS(name, num, amountSigns, ...) \
-				case num:								   \
-					__VA_ARGS__							   \
+				case num:								    	 \
+					__VA_ARGS__									     \
 					break;	
 
 			switch (node->num) {
@@ -442,7 +455,7 @@ Node * diff (FILE * dumpFile, Node * node) {
 			printf ("So function not found.\n");
 			exit (EXIT_FAILURE);
 			break;
-
+*/
 	}
 }
 
@@ -819,6 +832,22 @@ void PrintDiv (FILE * dumpFile, Node * node) {
 }
 
 
+void PrintMul (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	PrintDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cdot ");
+	PrintNode (dumpFile, node->right);
+	fprintf (dumpFile, " + ");
+	PrintNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cdot ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
 void PrintSub (FILE * dumpFile, Node * node) {
 
 	fprintf (dumpFile, "$$ ");
@@ -831,16 +860,14 @@ void PrintSub (FILE * dumpFile, Node * node) {
 }
 
 
-void PrintMul (FILE * dumpFile, Node * node) {
+void PrintSin (FILE * dumpFile, Node * node) {
 
 	fprintf (dumpFile, "$$ ");
 	PrintDiffNode (dumpFile, node);
 	fprintf (dumpFile, " = ");
-	PrintDiffNode (dumpFile, node->left);
-	fprintf (dumpFile, " \\cdot ");
-	PrintNode (dumpFile, node->right);
-	fprintf (dumpFile, " + ");
-	PrintNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cos \\left(");
+	GraphTreePrint (dumpFile, node->right);
+	fprintf (dumpFile, " \\right) ");
 	fprintf (dumpFile, " \\cdot ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " $$\n \\newline");
