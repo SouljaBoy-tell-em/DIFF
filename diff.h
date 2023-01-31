@@ -720,9 +720,7 @@ Node * print (FILE * dumpFile, Node * node) {
 
 void PrintAdd (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	PrintDiffNode (dumpFile, node->left);
 	fprintf (dumpFile, " + ");
 	PrintDiffNode (dumpFile, node->right);
@@ -732,9 +730,7 @@ void PrintAdd (FILE * dumpFile, Node * node) {
 
 void PrintCh (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\sh \\left( ");
 	GraphTreePrint (dumpFile, node->right);
 	fprintf (dumpFile, " \\right) ");
@@ -746,9 +742,7 @@ void PrintCh (FILE * dumpFile, Node * node) {
 
 void PrintConst (FILE * dumpFile, Node * node, int num) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, "%d", num);
 	fprintf (dumpFile, " $$\n \\newline");
 }
@@ -756,9 +750,7 @@ void PrintConst (FILE * dumpFile, Node * node, int num) {
 
 void PrintCos (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " - \\sin \\left( ");
 	GraphTreePrint (dumpFile, node->right);
 	fprintf (dumpFile, " \\right) ");
@@ -770,9 +762,7 @@ void PrintCos (FILE * dumpFile, Node * node) {
 
 void PrintCtg (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " - \\frac{ ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " }{ ");
@@ -785,9 +775,7 @@ void PrintCtg (FILE * dumpFile, Node * node) {
 
 void PrintCth (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\frac{ ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " }{ ");
@@ -800,9 +788,7 @@ void PrintCth (FILE * dumpFile, Node * node) {
 
 void PrintDeg1st (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	PrintNode (dumpFile, node);
 	fprintf (dumpFile, " \\cdot \\ln \\left( %d \\right) \\cdot", (node->left)->num);
 	PrintDiffNode (dumpFile, node->right);
@@ -812,9 +798,7 @@ void PrintDeg1st (FILE * dumpFile, Node * node) {
 
 void PrintDeg2nd (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, "%d", (node->right)->num);
 	(node->right)->num = (node->right)->num - 1;
 	fprintf (dumpFile, " \\cdot ");
@@ -828,9 +812,7 @@ void PrintDeg2nd (FILE * dumpFile, Node * node) {
 
 void PrintDeg3rd (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	PrintNode (dumpFile, node);
 	fprintf (dumpFile, " \\cdot \\left(");
 	PrintNode (dumpFile, node->right);
@@ -851,9 +833,7 @@ void PrintDiffNode (FILE * dumpFile, Node * node) {
 
 void PrintDiv (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, "\\frac{ ");
 	PrintDiffNode (dumpFile, node->left);
 	fprintf (dumpFile, " \\cdot ");
@@ -871,9 +851,7 @@ void PrintDiv (FILE * dumpFile, Node * node) {
 
 void PrintLn (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\frac{ ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " }{ ");
@@ -885,9 +863,7 @@ void PrintLn (FILE * dumpFile, Node * node) {
 
 void PrintLog (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\frac{");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " }{ ");
@@ -901,9 +877,7 @@ void PrintLog (FILE * dumpFile, Node * node) {
 
 void PrintMul (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	PrintDiffNode (dumpFile, node->left);
 	fprintf (dumpFile, " \\cdot ");
 	PrintNode (dumpFile, node->right);
@@ -925,9 +899,7 @@ void PrintNode (FILE * dumpFile, Node * node) {
 
 void PrintSh (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\ch \\left( ");
 	GraphTreePrint (dumpFile, node->right);
 	fprintf (dumpFile, " \\right) ");
@@ -939,9 +911,7 @@ void PrintSh (FILE * dumpFile, Node * node) {
 
 void PrintSin (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\cos \\left(");
 	GraphTreePrint (dumpFile, node->right);
 	fprintf (dumpFile, " \\right) ");
@@ -951,11 +921,17 @@ void PrintSin (FILE * dumpFile, Node * node) {
 }
 
 
-void PrintSub (FILE * dumpFile, Node * node) {
+void PrintStartDiffTex (FILE * dumpFile, Node * node) {
 
 	fprintf (dumpFile, "$$ ");
 	PrintDiffNode (dumpFile, node);
 	fprintf (dumpFile, " = ");
+}
+
+
+void PrintSub (FILE * dumpFile, Node * node) {
+
+	PrintStartDiffTex (dumpFile, node);
 	PrintDiffNode (dumpFile, node->left);
 	fprintf (dumpFile, " - ");
 	PrintDiffNode (dumpFile, node->right);
@@ -965,9 +941,7 @@ void PrintSub (FILE * dumpFile, Node * node) {
 
 void PrintTg (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\frac{ ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " }{ ");
@@ -980,9 +954,7 @@ void PrintTg (FILE * dumpFile, Node * node) {
 
 void PrintTh (FILE * dumpFile, Node * node) {
 
-	fprintf (dumpFile, "$$ ");
-	PrintDiffNode (dumpFile, node);
-	fprintf (dumpFile, " = ");
+	PrintStartDiffTex (dumpFile, node);
 	fprintf (dumpFile, " \\frac{ ");
 	PrintDiffNode (dumpFile, node->right);
 	fprintf (dumpFile, " }{ ");
