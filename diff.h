@@ -336,10 +336,12 @@ Node * diff (FILE * dumpFile, Node * node) {
 	switch (node->type) {
 
 		case NUM:
+			PrintConst (dumpFile, node, 0);
 			return num (0);
 			break;
 
-		case VAR: 
+		case VAR:
+			PrintConst (dumpFile, node, 1);
 			return num (1);
 			break;
 
@@ -347,16 +349,19 @@ Node * diff (FILE * dumpFile, Node * node) {
 			switch (node->op) {
 
 				case ADD:
+					PrintAdd (dumpFile, node);
 					return NodeOpAdd (diff (dumpFile, node->left), diff (dumpFile, node->right)); 
 						// NodeOpAdd (dL, dR);
 					break;
 
 				case SUB:
+					PrintSub (dumpFile, node);
 					return NodeOpSub (diff (dumpFile, node->left), diff (dumpFile, node->right));
 						// NodeOpSub (dL, dR);
 					break;
 
 				case MUL:
+					PrintMul (dumpFile, node);
 					return NodeOpAdd (NodeOpMul (diff (dumpFile, node->left), CopyUnderTheTree (node->right)), 
 									  NodeOpMul (CopyUnderTheTree (node->left), diff (dumpFile, node->right)));
 						// NodeOpAdd (NodeOpMul (dL, cR), NodeOpMul (cL, dR));
@@ -468,12 +473,10 @@ void GraphTreePrint (FILE * dumpFile, Node * node) {
 	switch (node->type) {
 
 		case NUM:
-			printf ("%d", node->num);
 			fprintf (dumpFile, "%d", node->num);
 			break;
 
 		case VAR:
-			printf ("%c", node->op);
 			fprintf (dumpFile, "%c", node->op);
 			break;
 
@@ -704,6 +707,72 @@ Node * print (FILE * dumpFile, Node * node) {
 }
 
 
+void PrintDiffNode (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, " \\left(");
+	GraphTreePrint (dumpFile, node);
+	fprintf (dumpFile, " \\right)'");
+}
+
+
+void PrintNode (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, " \\left(");
+	GraphTreePrint (dumpFile, node);
+	fprintf (dumpFile, " \\right)");
+}
+
+
+void PrintConst (FILE * dumpFile, Node * node, int num) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	fprintf (dumpFile, "%d", num);
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
+void PrintAdd (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	PrintDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " + ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, "$$\n \\newline");
+}
+
+
+void PrintSub (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	PrintDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " - ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, "$$\n \\newline");
+}
+
+
+void PrintMul (FILE * dumpFile, Node * node) {
+
+	fprintf (dumpFile, "$$ ");
+	PrintDiffNode (dumpFile, node);
+	fprintf (dumpFile, " = ");
+	PrintDiffNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cdot ");
+	PrintNode (dumpFile, node->right);
+	fprintf (dumpFile, " + ");
+	PrintNode (dumpFile, node->left);
+	fprintf (dumpFile, " \\cdot ");
+	PrintDiffNode (dumpFile, node->right);
+	fprintf (dumpFile, " $$\n \\newline");
+}
+
+
 Node * simplificationDiffTree (Node ** node, int * change) {
 
 	Node * startNode = * node;
@@ -749,7 +818,11 @@ Node * simplificationDiffTree (Node ** node, int * change) {
 
 		else if ((( * node)->right)->type == NUM && (( * node)->right)->num  == 1) {
 
-			* node =  ( * node)->left;
+			( * node)->type = NUM;
+			( * node)->num  =   1;
+
+			free (( * node)->left );
+			free (( * node)->right);
 		}
 
 		else if ((( * node)->left)->type == NUM && (( * node)->left)->num    == 1) {
