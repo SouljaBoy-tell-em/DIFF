@@ -134,6 +134,7 @@ void PrintMul (FILE * dumpFile, Node * node);
 void PrintNode (FILE * dumpFile, Node * node);
 void PrintSin (FILE * dumpFile, Node * node);
 void PrintSh (FILE * dumpFile, Node * node);
+void PrintStartDiffTex (FILE * dumpFile, Node * node);
 void PrintSub (FILE * dumpFile, Node * node);
 void PrintTg (FILE * dumpFile, Node * node);
 void PrintTh (FILE * dumpFile, Node * node);
